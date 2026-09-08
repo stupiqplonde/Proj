@@ -103,9 +103,13 @@ onMounted(async()=>{
 }
 
 .app{
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  /* запрещает всему app прокручиваться
+    разрешим прокрутку MessageList
+  */
+  overflow: hidden;
 }
 
 
@@ -114,6 +118,7 @@ onMounted(async()=>{
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* chat не должен прокручиваться чели */
 }
 
 .chat-info{
