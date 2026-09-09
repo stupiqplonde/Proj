@@ -4,10 +4,12 @@ import { ref } from "vue"
 // defineEmits сообщает vue какиеиз событий данный компонент в праве рассылать
 const emit = defineEmits<{
   send: [body:string];
+  addInLine: [body:string];
 }>();
 
 // тексткоторый пользователь вводит
 const draft = ref("");
+const isEmojiOpen = ref(false);
 
 // функция отправки нового соо
 function submitMessage(){
@@ -19,6 +21,14 @@ function submitMessage(){
 
   // отчистка поля после отправки
   draft.value = "";
+}
+
+function openEmojiPanel(){
+  isEmojiOpen.value = !isEmojiOpen.value;
+}
+
+function addEmoji(emoji: string){
+  draft.value += emoji;
 }
 
 </script>
@@ -35,7 +45,28 @@ function submitMessage(){
         placeholder="Напишите что-то"
         autocomplete="off"
     />
+    <button @click="openEmojiPanel">🤡</button>
+
+    <div v-if="isEmojiOpen">
+      <div>
+
+        <button
+            type="button"
+            @click="addEmoji('🥶')"
+        >🥶</button>
+        <button
+            type="button"
+            @click="addEmoji('🤡')"
+        >🤡</button>
+        <button
+            type="button"
+            @click="addEmoji('😊')"
+        >😊</button>
+      </div>
+    </div>
     <button type="submit">Отправить</button>
+
+
   </form>
 
 </template>
@@ -73,7 +104,7 @@ function submitMessage(){
   border-radius: 7px;
   cursor: pointer;
   color: white;
-  background: #386be0;
+  background: #434365;
   font: inherit;
   font-weight: 600;
 }

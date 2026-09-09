@@ -2,7 +2,7 @@
 import type { User} from "../types/user.ts";
 
 defineProps<{
-  user: User[];
+  users: User[];
 
   currentUserId: number;
 }>();

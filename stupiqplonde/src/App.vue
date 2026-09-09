@@ -1,14 +1,43 @@
 <script setup lang="ts">
 
+import type { User } from "./types/user.ts";
+
 import type { Message} from "./types/messages.ts";
+
 import Database from "@tauri-apps/plugin-sql"
+
 import MessageList from "./components/MessageList.vue";
+
 import MessageComposer from "./components/MessageComposer.vue";
+
+
 // импорт 2 фунции из vue
 // onMounted - запускает код после появления компонента
 // ref -создает быстрое перемещение
 import { onMounted, ref } from "vue";
+
 import AppHeader from "./components/AppHeader.vue";
+
+const oleg: User = {
+  id: 1,
+  name: "Oleg"
+};
+
+const kirill: User = {
+  id: 2,
+  name: "Kirill"
+};
+
+const users: User[] =[
+    oleg,
+    kirill,
+];
+
+const currentUser = ref<User>(oleg);
+
+function selectUser(user: User){
+  currentUser.value = user;
+}
 
 // список соо которые vue отображает в диалоговом экране
 const messages = ref<Message[]>([]);
@@ -35,10 +64,12 @@ async function sendMessage(body: string){
 
   await db.execute(
       "INSERT INTO messages (author, body) VALUES ($1, $2)",
-      ["Вы", body]
-  )
+      [
+          currentUser.value.name,
+          body,
+      ],
+  );
   await loadMessages()
-
 }
 
 // VUE выполнит код ниже, когда интерфейс загружен
@@ -63,14 +94,23 @@ onMounted(async()=>{
 
 <template>
   <main class="app">
-  <AppHeader :status="status"/>
+  <AppHeader
+      :status="status"
+      :users="users"
+      :current-user="currentUser"
+      @select="selectUser"
+  />
     <section class = "chat">
       <div class="chat-info">
         <h2>Первый чат</h2>
         <p2>локальный мессенджер</p2>
       </div>
-      <MessageList :messages="messages"/>
+      <MessageList
+          :messages="messages"
+          :current-user-name="currentUser.name"
+      />
       <MessageComposer @send="sendMessage"/>
+<!--      <EmojiPanel @send="sendMessage"/>-->
     </section>
   </main>
 </template>
