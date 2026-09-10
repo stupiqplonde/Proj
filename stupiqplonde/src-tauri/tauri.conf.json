@@ -12,9 +12,11 @@
   "app": {
     "windows": [
       {
-        "title": "stupiqplonde",
-        "width": 800,
-        "height": 600
+        "title": "Stupiqplonde",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 900,
+        "minHeight": 640
       }
     ],
     "security": {

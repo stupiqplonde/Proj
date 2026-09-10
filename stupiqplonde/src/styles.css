@@ -1,0 +1,104 @@
+:root {
+  color-scheme: dark;
+  --bg: #0e1621;
+  --bg-sidebar: #17212b;
+  --bg-chat: #0e1621;
+  --bg-composer: #17212b;
+  --bg-hover: #202b36;
+  --bg-active: #2b5278;
+  --bubble-own: #2b5278;
+  --bubble-other: #182533;
+  --line: rgba(255, 255, 255, 0.06);
+  --text: #e9eef3;
+  --muted: #8b9aab;
+  --accent: #2aabee;
+  --accent-2: #64b5f6;
+  --danger: #e05a5a;
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --radius: 16px;
+  --font: Inter, "Segoe UI", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(42, 171, 238, 0.08), transparent 50%),
+    radial-gradient(900px 500px at 100% 0%, rgba(245, 78, 0, 0.06), transparent 45%),
+    var(--bg);
+}
+
+button,
+textarea,
+input {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2b3a48;
+  border-radius: 8px;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
