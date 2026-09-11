@@ -10,10 +10,12 @@ import MessageBubble from "./MessageBubble.vue";
 
 import type { Message } from "../types/messages.ts";
 import type { Reaction } from "../types/reactions.ts";
+import type { User } from "../types/user.ts";
 
 const props = defineProps<{
   messages: Message[];
   reactions: Reaction[];
+  users: User[];
   currentUserName: string;
   reactionMessageId: number | null;
 }>();
@@ -42,6 +44,10 @@ function reactionsFor(messageId: number) {
   return props.reactions.filter((reaction) => reaction.message_id === messageId);
 }
 
+function avatarFor(author: string) {
+  return props.users.find((user) => user.name === author)?.avatar ?? "";
+}
+
 watch(getMessageCount, scrollToBottom);
 
 onMounted(scrollToBottom);
@@ -62,6 +68,7 @@ onMounted(scrollToBottom);
         v-for="message in messages"
         :key="message.id"
         :message="message"
+        :avatar="avatarFor(message.author)"
         :is-own="message.author === currentUserName"
         :reactions="reactionsFor(message.id)"
         :current-user-name="currentUserName"

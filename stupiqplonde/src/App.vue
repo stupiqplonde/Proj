@@ -16,22 +16,43 @@ type EmojiTarget =
   | { kind: "composer" }
   | { kind: "reaction"; messageId: number };
 
-const oleg: User = {
-  id: 1,
-  name: "Oleg",
-};
+const AVATARS_KEY = "avatars";
 
-const kirill: User = {
-  id: 2,
-  name: "Kirill",
-};
+const users = ref<User[]>([
+  { id: 1, name: "Oleg", avatar: "" },
+  { id: 2, name: "Kirill", avatar: "" },
+]);
 
-const users: User[] = [oleg, kirill];
+const currentUser = ref<User>(users.value[0]);
 
-const currentUser = ref<User>(oleg);
+function loadAvatars() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(AVATARS_KEY) ?? "{}") as Record<
+      string,
+      string
+    >;
+
+    for (const user of users.value) {
+      const avatar = saved[user.id];
+      if (typeof avatar === "string") user.avatar = avatar;
+    }
+  } catch {
+    return;
+  }
+}
 
 function selectUser(user: User) {
   currentUser.value = user;
+}
+
+function setAvatar(user: User, path: string) {
+  user.avatar = path;
+
+  const saved: Record<number, string> = {};
+  for (const item of users.value) {
+    saved[item.id] = item.avatar;
+  }
+  localStorage.setItem(AVATARS_KEY, JSON.stringify(saved));
 }
 
 const messages = ref<Message[]>([]);
@@ -166,6 +187,7 @@ function onDocumentPointerDown(event: PointerEvent) {
 }
 
 onMounted(async () => {
+  loadAvatars();
   window.addEventListener("pointerdown", onDocumentPointerDown);
 
   try {
@@ -191,6 +213,7 @@ onUnmounted(() => {
       :users="users"
       :current-user="currentUser"
       @select="selectUser"
+      @set-avatar="setAvatar"
     />
     <section class="chat">
       <div class="chat-info">
@@ -200,6 +223,7 @@ onUnmounted(() => {
       <MessageList
         :messages="messages"
         :reactions="reactions"
+        :users="users"
         :current-user-name="currentUser.name"
         :reaction-message-id="
           emojiTarget?.kind === 'reaction' ? emojiTarget.messageId : null

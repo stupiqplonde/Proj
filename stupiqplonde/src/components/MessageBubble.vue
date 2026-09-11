@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { convertFileSrc } from "@tauri-apps/api/core";
 
 import { QUICK_REACTIONS } from "../data/emojis.ts";
 import type { Message } from "../types/messages.ts";
@@ -7,9 +8,14 @@ import {
   groupReactions,
   type Reaction,
 } from "../types/reactions.ts";
+import {
+  getImagePath,
+  isImageMessage,
+} from "../utils/imageMessage.ts";
 
 const props = defineProps<{
   message: Message;
+  avatar: string;
   isOwn: boolean;
   reactions: Reaction[];
   currentUserName: string;
@@ -23,6 +29,15 @@ const emit = defineEmits<{
 
 const reactionGroups = computed(() =>
   groupReactions(props.reactions, props.currentUserName),
+);
+
+const imageSrc = computed(() => {
+  if (!isImageMessage(props.message.body)) return null;
+  return convertFileSrc(getImagePath(props.message.body));
+});
+
+const avatarSrc = computed(() =>
+  props.avatar ? convertFileSrc(props.avatar) : "",
 );
 
 function formatTime(value: string) {
@@ -54,6 +69,7 @@ function reactionTitle(group: { authors: string[]; reactedByMe: boolean }) {
     :class="{
       'message-block--own': isOwn,
       'message-block--picker-open': reactionPickerOpen,
+      'message-block--image': !!imageSrc,
     }"
   >
     <div class="quick-reactions">
@@ -78,14 +94,30 @@ function reactionTitle(group: { authors: string[]; reactedByMe: boolean }) {
       </button>
     </div>
 
+    <div class="message-row">
+      <span class="avatar">
+        <img
+          v-if="avatarSrc"
+          :src="avatarSrc"
+          alt=""
+        />
+        <span v-else>{{ message.author[0] }}</span>
+      </span>
     <article
       class="message"
       :class="{
         'message--own': isOwn,
         'message--other': !isOwn,
+        'message--image': !!imageSrc,
       }"
     >
-      <p>
+      <img
+        v-if="imageSrc"
+        class="message__image"
+        :src="imageSrc"
+        alt="Изображение"
+      />
+      <p v-else>
         {{ message.body }}
       </p>
       <footer>
@@ -94,6 +126,7 @@ function reactionTitle(group: { authors: string[]; reactedByMe: boolean }) {
         <span>{{ formatTime(message.created_at) }}</span>
       </footer>
     </article>
+    </div>
 
     <div
       v-if="reactionGroups.length"
@@ -128,6 +161,41 @@ function reactionTitle(group: { authors: string[]; reactedByMe: boolean }) {
 .message-block--own {
   align-self: flex-end;
   align-items: flex-end;
+}
+
+.message-block--image {
+  width: fit-content;
+  max-width: min(320px, 70%);
+}
+
+.message-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.message-block--own .message-row {
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #343842;
+  color: #f2f3f5;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .quick-reactions {
@@ -189,6 +257,21 @@ function reactionTitle(group: { authors: string[]; reactedByMe: boolean }) {
   margin: 0;
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+.message--image {
+  width: fit-content;
+  max-width: 100%;
+  padding: 6px;
+}
+
+.message__image {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 360px;
+  border-radius: 8px;
 }
 
 .message footer {

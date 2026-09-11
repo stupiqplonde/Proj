@@ -14,6 +14,7 @@ defineProps<{
 
 const emit = defineEmits<{
   select: [user: User];
+  setAvatar: [user: User, path: string];
 }>();
 
 function selectUser(user: User){
@@ -35,6 +36,7 @@ function selectUser(user: User){
           :users="users"
           :current-user-id="currentUser.id"
           @select="selectUser"
+          @set-avatar="(user, path) => emit('setAvatar', user, path)"
       />
     </div>
 
