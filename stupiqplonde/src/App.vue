@@ -1,167 +1,271 @@
 <script setup lang="ts">
-
 import type { User } from "./types/user.ts";
+import type { Message } from "./types/messages.ts";
+import type { Reaction } from "./types/reactions.ts";
 
-import type { Message} from "./types/messages.ts";
-
-import Database from "@tauri-apps/plugin-sql"
+import Database from "@tauri-apps/plugin-sql";
 
 import MessageList from "./components/MessageList.vue";
-
 import MessageComposer from "./components/MessageComposer.vue";
-
-
-// импорт 2 фунции из vue
-// onMounted - запускает код после появления компонента
-// ref -создает быстрое перемещение
-import { onMounted, ref } from "vue";
-
+import EmojiPanel from "./components/EmojiPanel.vue";
 import AppHeader from "./components/AppHeader.vue";
+
+import { computed, onMounted, onUnmounted, ref } from "vue";
+
+type EmojiTarget =
+  | { kind: "composer" }
+  | { kind: "reaction"; messageId: number };
 
 const oleg: User = {
   id: 1,
-  name: "Oleg"
+  name: "Oleg",
 };
 
 const kirill: User = {
   id: 2,
-  name: "Kirill"
+  name: "Kirill",
 };
 
-const users: User[] =[
-    oleg,
-    kirill,
-];
+const users: User[] = [oleg, kirill];
 
 const currentUser = ref<User>(oleg);
 
-function selectUser(user: User){
+function selectUser(user: User) {
   currentUser.value = user;
 }
 
-// список соо которые vue отображает в диалоговом экране
 const messages = ref<Message[]>([]);
+const reactions = ref<Reaction[]>([]);
+const status = ref("Подключение...");
+const emojiTarget = ref<EmojiTarget | null>(null);
+const composerInsertEmoji = ref<string | null>(null);
 
-// статус подключения
-const status = ref("Подключение...")
-
-// здесь будет подключение к бд
 let db: Database | null = null;
 
-// асинхронная функция загрузки соо из sql
-async function loadMessages(){
-  // если база не подключена прерываем выполнение
+const emojiPanelTitle = computed(() => {
+  if (emojiTarget.value?.kind === "reaction") {
+    return "Реакция на сообщение";
+  }
+
+  return "Вставить в сообщение";
+});
+
+async function loadMessages() {
   if (!db) return;
 
-  // читаем данные
   messages.value = await db.select<Message[]>(
-      "SELECT id, author, body, created_at FROM messages ORDER BY id ASC",
+    "SELECT id, author, body, created_at FROM messages ORDER BY id ASC",
   );
 }
 
-async function sendMessage(body: string){
+async function loadReactions() {
   if (!db) return;
 
-  await db.execute(
-      "INSERT INTO messages (author, body) VALUES ($1, $2)",
-      [
-          currentUser.value.name,
-          body,
-      ],
+  reactions.value = await db.select<Reaction[]>(
+    "SELECT id, message_id, emoji, author FROM message_reactions ORDER BY id ASC",
   );
-  await loadMessages()
 }
 
-// VUE выполнит код ниже, когда интерфейс загружен
-onMounted(async()=>{
-  try{
-    // Открываем бд
+async function loadChat() {
+  await Promise.all([loadMessages(), loadReactions()]);
+}
+
+async function sendMessage(body: string) {
+  if (!db) return;
+
+  await db.execute("INSERT INTO messages (author, body) VALUES ($1, $2)", [
+    currentUser.value.name,
+    body,
+  ]);
+  await loadChat();
+}
+
+async function toggleReaction(messageId: number, emoji: string) {
+  if (!db) return;
+
+  const existing = reactions.value.find(
+    (reaction) =>
+      reaction.message_id === messageId &&
+      reaction.emoji === emoji &&
+      reaction.author === currentUser.value.name,
+  );
+
+  if (existing) {
+    await db.execute("DELETE FROM message_reactions WHERE id = $1", [
+      existing.id,
+    ]);
+  } else {
+    try {
+      await db.execute(
+        "INSERT INTO message_reactions (message_id, emoji, author) VALUES ($1, $2, $3)",
+        [messageId, emoji, currentUser.value.name],
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  await loadReactions();
+}
+
+function closeEmojiPanel() {
+  emojiTarget.value = null;
+}
+
+function openComposerEmoji() {
+  if (emojiTarget.value?.kind === "composer") {
+    closeEmojiPanel();
+    return;
+  }
+
+  emojiTarget.value = { kind: "composer" };
+}
+
+function openReactionEmoji(messageId: number) {
+  if (
+    emojiTarget.value?.kind === "reaction" &&
+    emojiTarget.value.messageId === messageId
+  ) {
+    closeEmojiPanel();
+    return;
+  }
+
+  emojiTarget.value = { kind: "reaction", messageId };
+}
+
+function onEmojiSelect(emoji: string) {
+  const target = emojiTarget.value;
+  if (!target) return;
+
+  if (target.kind === "composer") {
+    composerInsertEmoji.value = emoji;
+    return;
+  }
+
+  closeEmojiPanel();
+  void toggleReaction(target.messageId, emoji);
+}
+
+function onEmojiInserted() {
+  composerInsertEmoji.value = null;
+}
+
+function onDocumentPointerDown(event: PointerEvent) {
+  if (!emojiTarget.value) return;
+
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+
+  if (
+    target.closest(".emoji-panel, .composer, .quick-reactions, .reaction")
+  ) {
+    return;
+  }
+
+  closeEmojiPanel();
+}
+
+onMounted(async () => {
+  window.addEventListener("pointerdown", onDocumentPointerDown);
+
+  try {
     db = await Database.load("sqlite:messanger.db");
-
-    // загружаем из базы старые соо
-    await loadMessages();
-
-    // показываем успешное соединение
+    await db.execute("PRAGMA foreign_keys = ON");
+    await loadChat();
     status.value = "История сохраняется локально";
-  } catch (error){
+  } catch (error) {
     console.error(error);
-
-    status.value = "Ошибка подключения к базе"
+    status.value = "Ошибка подключения к базе";
   }
 });
 
+onUnmounted(() => {
+  window.removeEventListener("pointerdown", onDocumentPointerDown);
+});
 </script>
 
 <template>
   <main class="app">
-  <AppHeader
+    <AppHeader
       :status="status"
       :users="users"
       :current-user="currentUser"
       @select="selectUser"
-  />
-    <section class = "chat">
+    />
+    <section class="chat">
       <div class="chat-info">
         <h2>Первый чат</h2>
-        <p2>локальный мессенджер</p2>
+        <p>локальный мессенджер</p>
       </div>
       <MessageList
-          :messages="messages"
-          :current-user-name="currentUser.name"
+        :messages="messages"
+        :reactions="reactions"
+        :current-user-name="currentUser.name"
+        :reaction-message-id="
+          emojiTarget?.kind === 'reaction' ? emojiTarget.messageId : null
+        "
+        @toggle-reaction="toggleReaction"
+        @request-reaction="openReactionEmoji"
       />
-      <MessageComposer @send="sendMessage"/>
-<!--      <EmojiPanel @send="sendMessage"/>-->
+      <EmojiPanel
+        v-if="emojiTarget"
+        :title="emojiPanelTitle"
+        @select="onEmojiSelect"
+        @close="closeEmojiPanel"
+      />
+      <MessageComposer
+        :insert-emoji="composerInsertEmoji"
+        :emoji-open="emojiTarget?.kind === 'composer'"
+        @send="sendMessage"
+        @request-emoji="openComposerEmoji"
+        @emoji-inserted="onEmojiInserted"
+      />
     </section>
   </main>
 </template>
 
 <style scoped>
-/* все элементы будут использовать одну модель размера */
-:global(*){
+:global(*) {
   box-sizing: border-box;
 }
 
-:global(html){
+:global(html) {
   background: #111318;
   color-scheme: dark;
 }
 
-:global(body){
+:global(body) {
   margin: 0;
 
   font-family:
-  Inter,
-  system-ui,
-  -apple-system,
-  BlinkMacSystemFont,
-  "Segoe UI",
-  sans-serif;
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 
   color: #f2f3f5;
 
   background: #111318;
 }
 
-.app{
+.app {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  /* запрещает всему app прокручиваться
-    разрешим прокрутку MessageList
-  */
   overflow: hidden;
 }
 
-
-.chat{
+.chat {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* chat не должен прокручиваться чели */
+  overflow: hidden;
 }
 
-.chat-info{
+.chat-info {
   padding: 20px 24px;
   border-bottom: 1px solid #8f96a3;
 }
@@ -171,10 +275,9 @@ onMounted(async()=>{
   font-size: 16px;
 }
 
-.chat-info p{
+.chat-info p {
   margin: 5px 0 0;
-  color: #292c34;
+  color: #8f96a3;
   font-size: 13px;
 }
-
 </style>

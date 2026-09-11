@@ -1,80 +1,89 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { nextTick, ref, useTemplateRef, watch } from "vue";
 
-// defineEmits сообщает vue какиеиз событий данный компонент в праве рассылать
-const emit = defineEmits<{
-  send: [body:string];
-  addInLine: [body:string];
+const props = defineProps<{
+  insertEmoji?: string | null;
+  emojiOpen?: boolean;
 }>();
 
-// тексткоторый пользователь вводит
-const draft = ref("");
-const isEmojiOpen = ref(false);
+const emit = defineEmits<{
+  send: [body: string];
+  requestEmoji: [];
+  emojiInserted: [];
+}>();
 
-// функция отправки нового соо
-function submitMessage(){
+const draft = ref("");
+const inputEl = useTemplateRef<HTMLInputElement>("composer-input");
+const caret = ref(0);
+
+function rememberCaret() {
+  const input = inputEl.value;
+  if (!input) return;
+  caret.value = input.selectionStart ?? draft.value.length;
+}
+
+watch(
+  () => props.insertEmoji,
+  async (emoji) => {
+    if (!emoji) return;
+
+    const start = caret.value;
+    const current = draft.value;
+    draft.value = current.slice(0, start) + emoji + current.slice(start);
+    caret.value = start + emoji.length;
+    emit("emojiInserted");
+
+    await nextTick();
+    const input = inputEl.value;
+    if (!input) return;
+    input.focus();
+    input.setSelectionRange(caret.value, caret.value);
+  },
+);
+
+function submitMessage() {
   const body = draft.value.trim();
 
-  if(!body) return;
+  if (!body) return;
 
-  emit("send", body)
-
-  // отчистка поля после отправки
+  emit("send", body);
   draft.value = "";
+  caret.value = 0;
 }
-
-function openEmojiPanel(){
-  isEmojiOpen.value = !isEmojiOpen.value;
-}
-
-function addEmoji(emoji: string){
-  draft.value += emoji;
-}
-
 </script>
 
 <template>
-
   <form
-      class="composer"
-      @submit.prevent="submitMessage"
+    class="composer"
+    @submit.prevent="submitMessage"
   >
     <input
-        v-model="draft"
-        type="text"
-        placeholder="Напишите что-то"
-        autocomplete="off"
+      ref="composer-input"
+      v-model="draft"
+      type="text"
+      placeholder="Напишите что-то"
+      autocomplete="off"
+      @click="rememberCaret"
+      @keyup="rememberCaret"
+      @input="rememberCaret"
+      @select="rememberCaret"
     />
-    <button @click="openEmojiPanel">🤡</button>
-
-    <div v-if="isEmojiOpen">
-      <div>
-
-        <button
-            type="button"
-            @click="addEmoji('🥶')"
-        >🥶</button>
-        <button
-            type="button"
-            @click="addEmoji('🤡')"
-        >🤡</button>
-        <button
-            type="button"
-            @click="addEmoji('😊')"
-        >😊</button>
-      </div>
-    </div>
+    <button
+      type="button"
+      class="composer__emoji"
+      :class="{ 'composer__emoji--open': emojiOpen }"
+      title="Вставить эмодзи"
+      @click="emit('requestEmoji')"
+    >
+      Эмодзи
+    </button>
     <button type="submit">Отправить</button>
-
-
   </form>
-
 </template>
 
 <style scoped>
-.composer{
+.composer {
   display: flex;
-  /* position: sticky; */
   bottom: 0;
   gap: 10px;
   padding: 15px 20px;
@@ -83,7 +92,7 @@ function addEmoji(emoji: string){
   flex-shrink: 0;
 }
 
-.composer input{
+.composer input {
   flex: 1;
   min-width: 0;
   padding: 11px 13px;
@@ -94,11 +103,12 @@ function addEmoji(emoji: string){
   font: inherit;
 }
 
-.composer input:focus{
+.composer input:focus {
+  outline: none;
   border-color: #4f7fa4;
 }
 
-.composer button{
+.composer button {
   padding: 0 18px;
   border: none;
   border-radius: 7px;
@@ -109,4 +119,7 @@ function addEmoji(emoji: string){
   font-weight: 600;
 }
 
+.composer__emoji--open {
+  background: #386be0;
+}
 </style>
