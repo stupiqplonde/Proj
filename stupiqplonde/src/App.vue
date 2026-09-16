@@ -21,6 +21,8 @@ import type { Chat } from "./types/chats";
 
 import type { Message } from "./types/message.ts";
 
+import ChatInfo from "./components/ChatInfo.vue";
+
 const oleg: User = {
   id: 1,
   name: "Олег",
