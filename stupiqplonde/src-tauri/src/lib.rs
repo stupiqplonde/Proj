@@ -1,4 +1,5 @@
-use core::error::Source;
+use std::path::Path;
+use std::ffi::OsStr;
 // импорт типов необходимых для migrations
 use tauri_plugin_sql::{Migration, MigrationKind};
 
@@ -6,8 +7,8 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 
 #[tauri::command]
-fn save_attachment(source: Source) -> Result<String, String> {
-    let app_dir = std::env::current_dir() //проверка где лежит приложение
+fn save_attachment(source: String) -> Result<String, String> {
+    let app_dir = std::env::current_dir() // проверка где лежит приложение
         .map_err(|e| e.to_string())?; // функция обработки возможной ошибки
     let attachment_dir = app_dir.join("attachment");
     // join - присоединение к существующему пути до папки
@@ -16,9 +17,15 @@ fn save_attachment(source: Source) -> Result<String, String> {
     std::fs::create_dir_all(&attachment_dir)
         .map_err(|e| e.to_string())?;
 
-    let file_name = format!("image_{}.png", chrono::Utc::now().timestamp());
+    // 1. Извлекаем расширение и безопасно переводим его в &str
+    let extension = Path::new(&source)
+        .extension()
+        .and_then(OsStr::to_str)
+        .unwrap_or("png"); // Если расширения нет, используем дефолтное (например, bin)
 
-    let destination = attachment_dir.join(file_name);
+    let file_name = format!("image_{}.{extension}", chrono::Utc::now().timestamp());
+
+    let destination = attachment_dir.join(&file_name);
 
     std::fs::copy(source, destination).map_err(|e| e.to_string())?;
 
@@ -47,6 +54,12 @@ pub fn run() {
             sql: include_str!("../migrations/0002_reactions.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 3,
+            description: "message_attachment",
+            sql: include_str!("../migrations/0003_message_attachments.sql"),
+            kind: MigrationKind::Up,
+        }
     ];
 
     tauri::Builder::default()
@@ -57,6 +70,11 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
+        .invoke_handler(
+            tauri::generate_handler![
+                save_attachment
+            ]
+        )
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

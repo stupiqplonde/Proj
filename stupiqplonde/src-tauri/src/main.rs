@@ -3,10 +3,4 @@
 
 fn main() {
     stupiqplonde_lib::run()
-
-        .invoke_handler(
-            tauri::generate_handler![
-                save_attachment,
-            ]
-        )
 }
