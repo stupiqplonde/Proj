@@ -1,8 +1,36 @@
+use core::error::Source;
 // импорт типов необходимых для migrations
 use tauri_plugin_sql::{Migration, MigrationKind};
 
 // аннотация необходимая tauri для мобильных платформ
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+
+#[tauri::command]
+fn save_attachment(source: Source) -> Result<String, String> {
+    let app_dir = std::env::current_dir() //проверка где лежит приложение
+        .map_err(|e| e.to_string())?; // функция обработки возможной ошибки
+    let attachment_dir = app_dir.join("attachment");
+    // join - присоединение к существующему пути до папки
+
+    // fs - файловая система - для раблоты сфайлами
+    std::fs::create_dir_all(&attachment_dir)
+        .map_err(|e| e.to_string())?;
+
+    let file_name = format!("image_{}.png", chrono::Utc::now().timestamp());
+
+    let destination = attachment_dir.join(file_name);
+
+    std::fs::copy(source, destination).map_err(|e| e.to_string())?;
+
+    Ok(
+        format!(
+            "attachment/{}",
+            file_name
+        )
+    )
+}
+
+
 
 // главная функция для запуска приложения
 pub fn run() {

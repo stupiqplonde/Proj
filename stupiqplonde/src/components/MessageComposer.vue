@@ -5,6 +5,8 @@ import {
   open
 } from "@tauri-apps/plugin-dialog";
 
+import { invoke } from "@tauri-apps/api/core";
+
 import {fileImage} from "../utils/imageMessage.ts";
 
 const props = defineProps<{
@@ -68,6 +70,20 @@ async function pickFile() {
       }
     ]
   });
+
+  if(!file){
+    return
+  }
+
+  const savedPath =
+      await invoke<string>(
+          "save_attachment",
+          {
+            source: file
+          }
+      );
+
+  console.log(savedPath)
 
   if (!file || Array.isArray(file)) return;
 
