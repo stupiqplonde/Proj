@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import type { Message} from "../types/messages.ts";
+import type { Message } from "../types/message.ts";
 
 defineProps<{
   message: Message;
@@ -21,7 +21,7 @@ defineProps<{
     </p>
     <footer>
             <span>
-              {{message.author}}
+              {{ message.author}}
             </span>
       <span>
               |
@@ -41,12 +41,10 @@ defineProps<{
   padding: 10px 12px;
   border-radius: 10px;
 }
-
 .message--own{
   align-self: flex-end;
   background: #386be0;
 }
-
 .message--other{
   align-self: flex-start;
   background: #252830;
@@ -66,4 +64,5 @@ defineProps<{
   color: #b5bbc7;
   font-size: 10px;
 }
+
 </style>

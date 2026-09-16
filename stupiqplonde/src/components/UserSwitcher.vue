@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { User} from "../types/user.ts";
+import type { User } from "../types/user.ts";
 
 defineProps<{
   users: User[];
@@ -14,31 +14,31 @@ const emit = defineEmits<{
 function selectUser(user: User){
   emit("select", user);
 }
-
 </script>
 
 <template>
   <div class="user-switcher">
-    <span class="user-switch__label">
+    <span class="user-switcher__label">
       Пишет:
     </span>
     <button
-        v-for="user in users"
-        :key="user.id"
-        type="button"
-        class="user-switcher__button"
+      v-for="user in users"
+      :key="user.id"
+      type="button"
+      class="user-switcher__button"
 
-        :class="{
-          'user-switcher__button-active':
-          user.id === currentUserId
-        }"
+      :class="{
+        'user-switcher__button--active':
+        user.id === currentUserId
+      }"
 
-        @click="selectUser(user)"
+      @click="selectUser(user)"
     >
-      {{ user.name }}
+     {{ user.name }}
     </button>
   </div>
 </template>
+
 
 <style scoped>
 .user-switcher{
@@ -47,7 +47,7 @@ function selectUser(user: User){
   gap: 6px;
 }
 
-.user-switch__label{
+.user-switcher__label{
   color: #8f96a3;
   font-size: 12px;
 }
@@ -63,10 +63,9 @@ function selectUser(user: User){
   font-size: 12px;
 }
 
-.user-switcher__button-active{
+.user-switcher__button--active{
   background: #386be0;
   border-color: #386be0;
   color: white;
 }
-
 </style>

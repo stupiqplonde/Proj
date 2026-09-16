@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import {
-  nextTick, // позволяет дождаться момента пока VUE обновит html
+  nextTick,       // Позволяет дождаться момента, когда Vue обновит HTML
   onMounted,
-  useTemplateRef, // дает возможность получить ссылку на html-элемент из template
-  watch, // позволяет следить за изменением выбранных данных
+  useTemplateRef, // Дает возможность получить ссылку на html-элемент из template
+  watch,          // озволяет следть за изменение выбранных данных
 } from "vue";
 
 import MessageBubble from "./MessageBubble.vue";
 
-import type {Message} from "../types/messages.ts";
+import type {Message} from "../types/message.ts";
 
 const props = defineProps<{
   messages: Message[];
@@ -18,7 +18,7 @@ const props = defineProps<{
 const bottomAnchor = useTemplateRef<HTMLDivElement>("bottom-anchor");
 
 async function scrollToBottom(){
-  /* нужно дождаться обновления dom */
+  /* Нужно дождаться обновления DOM */
   await nextTick();
 
   bottomAnchor.value?.scrollIntoView({
@@ -38,20 +38,20 @@ watch(
 );
 
 onMounted(scrollToBottom);
-
 </script>
 
 <template>
   <div class="messages">
+    <!-- Данный див будет отображаться когда сообщений нет -->
     <div class="messages-inner">
       <div
           v-if="messages.length === 0"
           class="empty"
       >
         <strong> Здесь пока пусто </strong>
-        <span> Напишите первое сообщение</span>
+        <span> Напишите первое сообщение </span>
       </div>
-
+      <!-- Vue создает article для каждого сообщения из базы -->
       <MessageBubble
           v-for="message in messages"
           :key="message.id"
@@ -59,18 +59,16 @@ onMounted(scrollToBottom);
           :is-own="message.author === currentUserName"
       />
       <div
-          ref="bottom-anchor"
-          class="bottom-anchor"
-          aria-hidden="true"
+        ref="bottom-anchor"
+        class="bottom-anchor"
+        aria-hidden="true"
       >
-
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-
 .bottom-anchor{
   height: 1px;
   flex-shrink: 0;
@@ -98,4 +96,5 @@ onMounted(scrollToBottom);
   text-align: center;
   color: #858c98;
 }
+
 </style>
