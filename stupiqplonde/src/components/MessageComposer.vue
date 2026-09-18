@@ -16,6 +16,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   send: [body: string];
+  // sendImage: [path: string];
   requestEmoji: [];
   emojiInserted: [];
 }>();

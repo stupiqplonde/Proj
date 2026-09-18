@@ -1,5 +1,10 @@
 use std::path::Path;
-use std::ffi::OsStr;
+use std::time::{
+    SystemTime,
+    UNIX_EPOCH
+};
+
+use tauri::Manager;
 // импорт типов необходимых для migrations
 use tauri_plugin_sql::{Migration, MigrationKind};
 
@@ -7,34 +12,113 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 
 #[tauri::command]
-fn save_attachment(source: String) -> Result<String, String> {
-    let app_dir = std::env::current_dir() // проверка где лежит приложение
-        .map_err(|e| e.to_string())?; // функция обработки возможной ошибки
-    let attachment_dir = app_dir.join("attachment");
-    // join - присоединение к существующему пути до папки
+fn save_attachment(app: tauri::AppHandle, source: String) -> Result<String, String> {
+    let source_path = Path::new(&source);
 
-    // fs - файловая система - для раблоты сфайлами
-    std::fs::create_dir_all(&attachment_dir)
-        .map_err(|e| e.to_string())?;
+    if !source_path.is_file() {
+        return Err(
+            "Выбранный формат не существует"
+                .to_string()
+        );
+    }
 
-    // 1. Извлекаем расширение и безопасно переводим его в &str
-    let extension = Path::new(&source)
-        .extension()
-        .and_then(OsStr::to_str)
-        .unwrap_or("png"); // Если расширения нет, используем дефолтное (например, bin)
-
-    let file_name = format!("image_{}.{extension}", chrono::Utc::now().timestamp());
-
-    let destination = attachment_dir.join(&file_name);
-
-    std::fs::copy(source, destination).map_err(|e| e.to_string())?;
-
-    Ok(
-        format!(
-            "attachment/{}",
-            file_name
+    let extension = source_path.
+        extension()
+        .and_then(
+            |extension| extension.to_str()
         )
+        .map(
+            |extension| extension.to_lowercase()
+        )
+        .ok_or_else(
+            ||
+                "У файла нет расширения"
+                    .to_string()
+        )?;
+    let allowed_extensions = [
+        "png",
+        "jpg",
+        "jpeg",
+        "webp",
+        "gif",
+    ];
+
+    if !allowed_extensions
+        .contains(
+            &extension.as_str()
+        )
+    {
+        return Err(
+            "Этот формат излбражения не поддерживается"
+            .to_string()
+        );
+    }
+
+    let app_data_dir =
+        app
+            .path()
+            .app_data_dir()
+            .map_err(
+                |error|
+                    error.to_string()
+            )?;
+
+    let attachments_dir =
+        app_data_dir
+            .join("attachments");
+
+    std::fs::create_dir_all(
+        &attachments_dir
     )
+        .map_err(
+            |error|
+                error.to_string()
+        )?;
+
+    let timestamp =
+        SystemTime::now()
+            .duration_since(
+                UNIX_EPOCH
+            )
+            .map_err(
+                |error|
+                    error.to_string()
+            )?
+            .as_nanos();
+
+    let file_name =
+    format!(
+        "image_{}.{}",
+        timestamp,
+        extension,
+    );
+
+    let destination =
+        attachments_dir
+            .join(file_name);
+
+    std::fs::copy(
+        source_path,
+        &destination,
+    )
+        .map_err(
+            |error|
+                error.to_string()
+        )?;
+
+    let saved_path =
+        destination
+            .to_str()
+
+            .ok_or_else(
+                ||
+                    "Не удалось преобразовать путь файла"
+                        .to_string()
+            )?
+
+            .to_string();
+
+    Ok(saved_path)
 }
 
 

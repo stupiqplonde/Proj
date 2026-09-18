@@ -271,6 +271,7 @@ function reactionTitle(group: { authors: string[]; reactedByMe: boolean }) {
   height: auto;
   max-width: 100%;
   max-height: 360px;
+  object-fit: cover;
   border-radius: 8px;
 }
 

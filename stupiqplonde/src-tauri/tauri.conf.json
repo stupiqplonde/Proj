@@ -26,7 +26,8 @@
           "$PICTURE/**",
           "$DOWNLOAD/**",
           "$DESKTOP/**",
-          "$DOCUMENT/**"
+          "$DOCUMENT/**",
+          "$APPDATA/attachments/**/*"
         ]
       }
     }

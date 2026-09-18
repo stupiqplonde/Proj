@@ -71,11 +71,12 @@ const emojiPanelTitle = computed(() => {
   return "Вставить в сообщение";
 });
 
-async function loadMessages() {
+async function loadMessages(/*chat_id: number*/) {
   if (!db) return;
 
   messages.value = await db.select<Message[]>(
-    "SELECT id, author, body, created_at FROM messages ORDER BY id ASC",
+    "SELECT id, author, type, body, attachment, created_at FROM messages ORDER BY id ASC",
+      /*[chat_id]*/
   );
 }
 
@@ -170,6 +171,46 @@ function onEmojiSelect(emoji: string) {
 function onEmojiInserted() {
   composerInsertEmoji.value = null;
 }
+
+// async function sendImage(path: string){
+//   if(!db)
+//     return;
+//   if (!activeChat.value)
+//     return;
+//
+//   await db.execute(
+//       `
+//       INSERT INTO messages
+//           (
+//            chat_id,
+//            author,
+//            type,
+//            body,
+//            attachment
+//           )
+//
+//         VALUES
+//             (
+//              $1,
+//              $2,
+//              $3,
+//              $4,
+//              $5
+//             )
+//       `,
+//       [
+//           activeChat.value.id,
+//           currentUser.value.name,
+//           "image",
+//           null,
+//           path
+//       ]
+//   );
+//
+//   await loadMessages(
+//       activeChat.value.id
+//   )
+// }
 
 function onDocumentPointerDown(event: PointerEvent) {
   if (!emojiTarget.value) return;
