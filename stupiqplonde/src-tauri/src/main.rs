@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    stupiqplonde_lib::run()
+    encore_67_messanger_lib::run()
 }

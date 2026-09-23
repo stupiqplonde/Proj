@@ -3,8 +3,9 @@
 import UserSwitcher from "./UserSwitcher.vue";
 
 import type { User } from "../types/user";
+
 // defineProps - спец конструкция vue, которая сообщает:
-// этот компонент ожидает получения данных от родительского компонента
+// Этот компонент ожидает получения данных от родительского компонента
 
 defineProps<{
   status: string;
@@ -14,19 +15,17 @@ defineProps<{
 
 const emit = defineEmits<{
   select: [user: User];
-  setAvatar: [user: User, path: string];
 }>();
 
 function selectUser(user: User){
   emit("select", user);
 }
-
 </script>
 
 <template>
   <header class="header">
-    <div>
-      <h1>messenger</h1>
+    <div>`
+      <h1>Encore 67 messenger</h1>
 
       <p>{{status}}</p>
     </div>
@@ -36,10 +35,8 @@ function selectUser(user: User){
           :users="users"
           :current-user-id="currentUser.id"
           @select="selectUser"
-          @set-avatar="(user, path) => emit('setAvatar', user, path)"
       />
     </div>
-
     <span class="badge">
         Локально
       </span>
@@ -48,8 +45,8 @@ function selectUser(user: User){
 
 <style scoped>
 /*
-   css этого блока будет относиться только к текущему vue компоненту
-   например .header не повлияет на любой другой header в кноде вне этого компонента
+  CSS этого блока будет относиться только к текущему vue компоненту
+  Например .header не повлияет на любой другой .header в коде вне этого компонента
 */
 
 .header{
@@ -59,8 +56,8 @@ function selectUser(user: User){
   padding: 18px 24px;
   border-bottom: 1px solid #292c34;
   background: #17191f;
-  position: sticky;
-  flex-shrink: 0; /* может ли flex уменьшать высоту */
+  /* Управляет тем, может ли flex уменьшать элемент*/
+  flex-shrink: 0;
 }
 
 .header__actions{
@@ -74,7 +71,7 @@ function selectUser(user: User){
   font-size: 18px;
 }
 
-.header p {
+.header p{
   margin: 4px 0 0;
   color: #8f96a3;
 }

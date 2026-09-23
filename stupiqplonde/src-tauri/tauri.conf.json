@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "stupiqplonde",
+  "productName": "encore-67-messanger",
   "version": "0.1.0",
-  "identifier": "com.admin.stupiqplonde",
+  "identifier": "com.copm11.encore-67-messanger",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "stupiqplonde",
+        "title": "encore-67-messanger",
         "width": 800,
         "height": 600
       }
@@ -22,11 +22,6 @@
       "assetProtocol": {
         "enable": true,
         "scope": [
-          "$HOME/**",
-          "$PICTURE/**",
-          "$DOWNLOAD/**",
-          "$DESKTOP/**",
-          "$DOCUMENT/**",
           "$APPDATA/attachments/**/*"
         ]
       }
