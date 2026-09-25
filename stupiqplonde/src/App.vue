@@ -124,10 +124,12 @@ async function loadMessages(chatId: number){
     `SELECT
        messages.id,
        messages.chat_id,
-       author_id,
+       messages.author_id,
+       users.display_name AS author_name,
+       users.avatar_path AS author_avatar,
        messages.type,
        messages.body,
-        messages.attachment,
+       messages.attachment,
        messages.created_at
       FROM messages
       INNER JOIN users
@@ -264,6 +266,7 @@ onMounted(async()=>{
         @select="selectUser"
         @profile="openProfile"
     />
+    <p v-else class="boot-status">{{ status }}</p>
     <div
         v-if="currentUser"
         class="workspace"
@@ -275,10 +278,10 @@ onMounted(async()=>{
       />
       <section class="chat">
         <template v-if="activeChat">
-          <ChatInfo
-            :title="activeChat.title"
-            :subtitle="activeChat.subtitle"
-          />
+          <div class="chat-info">
+            <h2>{{ activeChat.title }}</h2>
+            <p>{{ activeChat.subtitle }}</p>
+          </div>
           <MessageList
               :key="activeChat.id"
               :messages="messages"
@@ -344,6 +347,11 @@ onMounted(async()=>{
       Разрешим прокрутку только для MessageList
   */
   overflow: hidden;
+}
+
+.boot-status{
+  margin: 24px;
+  color: #858c98;
 }
 
 .chat{

@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS users (
-    id INTEDER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     display_name TEXT NOT NULL,
     avatar_path TEXT,
@@ -44,7 +44,7 @@ INSERT OR IGNORE INTO users (
 SELECT
     -- Технический username legacy_1 legacy_2 ...
     -- CAST превращает число в текст
-    'legacy_' || CAST(old_authors.first_message_id AS TEXT)
+    'legacy_' || CAST(old_authors.first_message_id AS TEXT),
     old_authors.author
 FROM (
     SELECT
@@ -119,7 +119,7 @@ SELECT
     messages.type,
     messages.body,
     messages.attachment,
-    messages.created_at,
+    messages.created_at
 FROM messages;
 
 DROP TABLE messages;
@@ -129,8 +129,8 @@ RENAME TO messages;
 
 CREATE INDEX IF NOT EXISTS
 idx_messages_chat_id
-ON messages(chat_id)
+ON messages(chat_id);
 
 CREATE INDEX IF NOT EXISTS
 idx_messages_author_id
-ON messages(author_id)
+ON messages(author_id);

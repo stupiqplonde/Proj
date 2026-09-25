@@ -25,7 +25,7 @@ function selectUser(user: User){
 
 <template>
   <header class="header">
-    <div>`
+    <div>
       <h1>Encore 67 messenger</h1>
 
       <p>{{status}}</p>
