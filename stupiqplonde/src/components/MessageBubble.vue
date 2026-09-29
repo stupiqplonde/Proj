@@ -1,18 +1,54 @@
 <script setup lang="ts">
 import { getFileUrl } from "../types/file.ts";
-import type { Message } from "../types/message.ts";
+
+import type {
+  Message,
+  MessageEdit,
+} from "../types/message.ts";
+
 import { ref } from "vue";
+
+const emit = defineEmits<{
+  save: [
+      message: MessageEdit
+  ];
+}>();
 
 defineProps<{
   message: Message;
   isOwn: boolean;
   close?: false;
+  edit?: false;
 }>();
+
+function submitMess(){
+  const cleanMess = message.body.value.trim();
+
+  if (!cleanMess){
+    return;
+  }
+
+  emit(
+      "save",
+      {
+        message: cleanMess,
+      },
+  );
+}
 
 const isImgOpen = ref(false)
 
-const openModal = () => { isImgOpen.value = true }
-const closeModal = () => { isImgOpen.value = false }
+const isMessageEdit = ref(false)
+
+const isEdit = ref(false)
+
+const openModalImg = () => { isImgOpen.value = true }
+const closeModalImg = () => { isImgOpen.value = false }
+
+const openModalMesEdit = () => { isMessageEdit.value = true }
+const closeModalMesEdit = () => { isMessageEdit.value = false }
+
+const openEdit = () => { isEdit.value = true }
 </script>
 
 <template>
@@ -31,14 +67,14 @@ const closeModal = () => { isImgOpen.value = false }
         v-if="message.type === 'image' && message.attachment"
         class="message-image"
         :src="getFileUrl(message.attachment)"
-        @click="openModal"
+        @click="openModalImg"
         alt="Превью"
     />
 
     <div
         v-if="isImgOpen"
         class="modal-overlay"
-        @click.self="closeModal"
+        @click.self="closeModalImg"
     >
       <div class="modal-content">
         <img
@@ -50,11 +86,45 @@ const closeModal = () => { isImgOpen.value = false }
     </div>
 
 
-    <footer>
+    <footer
+        @click="openModalMesEdit"
+    >
       <span>{{ message.author_name }}</span>
       <span>|</span>
       <span>{{ message.created_at }}</span>
     </footer>
+
+    <div
+        v-if="isMessageEdit"
+        class="modal-overlay"
+        @click.self="closeModalMesEdit"
+    >
+    <div
+        v-if="openEdit"
+    >
+      <input
+          id="message_edit"
+          v-model="message"
+          type="text"
+          maxlength="40"
+      >
+    </div>
+
+      <div class="modal-content">
+        <button>
+          ответить
+        </button>
+        <button>
+          копировать
+        </button>
+        <button
+            v-if="isOwn"
+            @click="isEdit"
+        >
+          редактировать
+        </button>
+      </div>
+    </div>
   </article>
 </template>
 

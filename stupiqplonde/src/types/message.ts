@@ -11,3 +11,8 @@ export interface Message{
     attachment: string | null;
     created_at: string;
 }
+
+export interface MessageEdit{
+    body: string | null;
+    created_at: string;
+}
