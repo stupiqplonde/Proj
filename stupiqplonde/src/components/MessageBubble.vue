@@ -21,20 +21,20 @@ defineProps<{
   edit?: false;
 }>();
 
-function submitMess(){
-  const cleanMess = message.body.value.trim();
-
-  if (!cleanMess){
-    return;
-  }
-
-  emit(
-      "save",
-      {
-        message: cleanMess,
-      },
-  );
-}
+// function submitMess(){
+//   const cleanMess = message.body.value.trim();
+//
+//   if (!cleanMess){
+//     return;
+//   }
+//
+//   emit(
+//       "save",
+//       {
+//         message: cleanMess,
+//       },
+//   );
+// }
 
 const isImgOpen = ref(false)
 
@@ -100,7 +100,7 @@ const openEdit = () => { isEdit.value = true }
         @click.self="closeModalMesEdit"
     >
     <div
-        v-if="openEdit"
+        v-if="isEdit"
     >
       <input
           id="message_edit"
@@ -119,7 +119,7 @@ const openEdit = () => { isEdit.value = true }
         </button>
         <button
             v-if="isOwn"
-            @click="isEdit"
+            @click="openEdit"
         >
           редактировать
         </button>
