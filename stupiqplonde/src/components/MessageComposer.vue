@@ -5,17 +5,20 @@ import { open } from "@tauri-apps/plugin-dialog";
 
 import { invoke } from "@tauri-apps/api/core";
 
-import type { Message, MessageEdit } from "../types/message.ts";
+import type { Message, MessageDelete, MessageEdit } from "../types/message.ts";
 
 const props = defineProps<{
   editingMessage?: Message | null;
+  deletingMessage?: Message | null;
 }>();
 
 const emit = defineEmits<{
   send: [body: string];
   sendImage: [path: string];
   saveEdit: [edit: MessageEdit];
+  deleteMessage: [payload: MessageDelete];
   cancelEdit: [];
+  cancelDelete: [];
 }>();
 
 const draft = ref("");
@@ -52,6 +55,18 @@ function submitMessage() {
 function cancelEdit() {
   draft.value = "";
   emit("cancelEdit");
+}
+
+function cancelDelete() {
+  emit("cancelDelete");
+}
+
+function confirmDelete() {
+  if (!props.deletingMessage) return;
+
+  emit("deleteMessage", {
+    id: props.deletingMessage.id,
+  });
 }
 
 async function selectImage() {
@@ -120,6 +135,33 @@ async function selectImage() {
         {{ editingMessage ? "Сохранить" : "Отправить" }}
       </button>
     </form>
+
+    <div
+        v-if="deletingMessage"
+        class="modal-overlay"
+        @click.self="cancelDelete"
+    >
+      <div class="confirm-dialog">
+        <strong>Удалить сообщение?</strong>
+        <p>{{ deletingMessage.body ?? "изображение" }}</p>
+        <div class="confirm-actions">
+          <button
+              type="button"
+              class="confirm-cancel"
+              @click="cancelDelete"
+          >
+            Отмена
+          </button>
+          <button
+              type="button"
+              class="confirm-delete"
+              @click="confirmDelete"
+          >
+            Удалить
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -158,6 +200,77 @@ async function selectImage() {
   white-space: nowrap;
   color: #858c98;
   font-size: 12px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+
+.confirm-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 280px;
+  max-width: 90vw;
+  padding: 18px;
+  border-radius: 12px;
+  background: #252830;
+}
+
+.confirm-dialog strong {
+  font-size: 15px;
+  color: #f2f3f5;
+}
+
+.confirm-dialog p {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #858c98;
+  font-size: 13px;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.confirm-actions button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.confirm-cancel {
+  color: #f2f3f5;
+  background: #1c1f26;
+}
+
+.confirm-cancel:hover {
+  background: #343842;
+}
+
+.confirm-delete {
+  color: white;
+  background: #3c0a0a;
+}
+
+.confirm-delete:hover {
+  background: #3c0a0a;
 }
 
 .cancel-button {

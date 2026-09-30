@@ -9,6 +9,7 @@ const emit = defineEmits<{
   edit: [message: Message];
   copy: [message: Message];
   forward: [message: Message];
+  delete: [message: Message];
 }>();
 
 const props = defineProps<{
@@ -46,6 +47,11 @@ function onCopy() {
 function onForward() {
   closeMenu();
   emit("forward", props.message);
+}
+
+function onDelete(){
+  closeMenu();
+  emit("delete", props.message);
 }
 </script>
 
@@ -111,6 +117,13 @@ function onForward() {
             @click="onEdit"
         >
           редактировать
+        </button>
+        <button
+            v-if="isOwn"
+            type="button"
+            @click="onDelete"
+        >
+          удалить
         </button>
       </div>
     </div>

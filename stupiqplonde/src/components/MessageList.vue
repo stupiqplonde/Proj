@@ -19,6 +19,7 @@ const emit = defineEmits<{
   edit: [message: Message];
   copy: [message: Message];
   forward: [message: Message];
+  delete: [message: Message];
 }>();
 
 const bottomAnchor = useTemplateRef<HTMLDivElement>("bottom-anchor");
@@ -66,6 +67,7 @@ onMounted(scrollToBottom);
           @edit="emit('edit', $event)"
           @copy="emit('copy', $event)"
           @forward="emit('forward', $event)"
+          @delete="emit('delete', $event)"
       />
       <div
         ref="bottom-anchor"

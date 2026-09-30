@@ -17,3 +17,7 @@ export interface MessageEdit{
     id: number;
     body: string;
 }
+
+export interface MessageDelete{
+    id: number;
+}

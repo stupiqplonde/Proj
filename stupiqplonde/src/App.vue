@@ -19,7 +19,7 @@ import ChatSidebar from "./components/ChatSidebar.vue";
 
 import type { Chat } from "./types/chats";
 
-import type { Message, MessageEdit } from "./types/message.ts";
+import type { Message, MessageDelete, MessageEdit } from "./types/message.ts";
 
 import type {ProfileUpdate} from "./types/user";
 
@@ -90,6 +90,8 @@ const activeChatId = ref(1);
 
 const editingMessage = ref<Message | null>(null);
 
+const deletingMessage = ref<Message | null>(null);
+
 // Статус подключения к бд
 const status = ref("Подключение...")
 
@@ -114,6 +116,7 @@ async function selectChat(chat: Chat){
   activeChatId.value = chat.id;
 
   editingMessage.value = null;
+  deletingMessage.value = null;
 
   await loadMessages(chat.id);
 }
@@ -197,6 +200,35 @@ async function sendMessage(body: string){
   await loadMessages(activeChat.value.id)
 }
 
+function onDelete(message: Message){
+  editingMessage.value = null;
+  deletingMessage.value = message;
+}
+
+function cancelDelete(){
+  deletingMessage.value = null;
+}
+
+async function deleteMessage(dellmess: MessageDelete){
+  if (!db) return;
+
+  if (!activeChat.value) return;
+
+  if (!currentUser.value) return;
+
+  await db.execute(
+      `
+        DELETE FROM messages
+        WHERE id = $1
+      `,
+      [dellmess.id],
+  );
+
+  deletingMessage.value = null;
+
+  await loadMessages(activeChat.value.id);
+}
+
 async function sendImage(path:string){
   if(!db)
     return;
@@ -241,6 +273,7 @@ async function sendImage(path:string){
 }
 
 function onEdit(message: Message){
+  deletingMessage.value = null;
   editingMessage.value = message;
 }
 
@@ -338,13 +371,17 @@ onMounted(async()=>{
               @edit="onEdit"
               @copy="onCopy"
               @forward="onForward"
+              @delete="onDelete"
           />
           <MessageComposer
               :editing-message="editingMessage"
+              :deleting-message="deletingMessage"
               @send="sendMessage"
               @sendImage="sendImage"
               @save-edit="editMessage"
+              @delete-message="deleteMessage"
               @cancel-edit="cancelEdit"
+              @cancel-delete="cancelDelete"
           />
         </template>
       </section>
