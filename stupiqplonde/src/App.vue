@@ -19,7 +19,7 @@ import ChatSidebar from "./components/ChatSidebar.vue";
 
 import type { Chat } from "./types/chats";
 
-import type { Message } from "./types/message.ts";
+import type { Message, MessageEdit } from "./types/message.ts";
 
 import type {ProfileUpdate} from "./types/user";
 
@@ -88,6 +88,8 @@ const activeChat = ref<Chat | null>(null);
 
 const activeChatId = ref(1);
 
+const editingMessage = ref<Message | null>(null);
+
 // Статус подключения к бд
 const status = ref("Подключение...")
 
@@ -111,6 +113,8 @@ async function selectChat(chat: Chat){
 
   activeChatId.value = chat.id;
 
+  editingMessage.value = null;
+
   await loadMessages(chat.id);
 }
 
@@ -130,7 +134,8 @@ async function loadMessages(chatId: number){
        messages.type,
        messages.body,
        messages.attachment,
-       messages.created_at
+       messages.created_at,
+       messages.edited_at
       FROM messages
       INNER JOIN users
             ON users.id = messages.author_id
@@ -235,6 +240,50 @@ async function sendImage(path:string){
   )
 }
 
+function onEdit(message: Message){
+  editingMessage.value = message;
+}
+
+function cancelEdit(){
+  editingMessage.value = null;
+}
+
+async function editMessage(edit: MessageEdit){
+  if (!db) return;
+
+  if (!activeChat.value) return;
+
+  await db.execute(
+      `
+        UPDATE messages
+        SET
+          body = $1,
+          edited_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+      `,
+      [
+          edit.body,
+          edit.id,
+      ],
+  );
+
+  editingMessage.value = null;
+
+  await loadMessages(activeChat.value.id);
+}
+
+async function onCopy(message: Message){
+  const text = message.body ?? "";
+
+  if (!text) return;
+
+  await navigator.clipboard.writeText(text);
+}
+
+function onForward(_message: Message){
+  // Пересылка — следующий шаг
+}
+
 // VUE выполнит код ниже, когда интерфейс программы уже загрузится
 onMounted(async()=>{
   try{
@@ -286,10 +335,16 @@ onMounted(async()=>{
               :key="activeChat.id"
               :messages="messages"
               :current-user-id="currentUser.id"
+              @edit="onEdit"
+              @copy="onCopy"
+              @forward="onForward"
           />
           <MessageComposer
+              :editing-message="editingMessage"
               @send="sendMessage"
               @sendImage="sendImage"
+              @save-edit="editMessage"
+              @cancel-edit="cancelEdit"
           />
         </template>
       </section>

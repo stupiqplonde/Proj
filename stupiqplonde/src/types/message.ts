@@ -10,9 +10,10 @@ export interface Message{
     body: string | null;
     attachment: string | null;
     created_at: string;
+    edited_at: string | null;
 }
 
 export interface MessageEdit{
-    body: string | null;
-    created_at: string;
+    id: number;
+    body: string;
 }

@@ -181,7 +181,13 @@ pub fn run() {
             description: "create_users_and_link_messages",
             sql: include_str!("../migrations/0004_users.sql"),
             kind: MigrationKind::Up,
-        }
+        },
+        Migration {
+            version: 5,
+            description: "message_edited_at",
+            sql: include_str!("../migrations/0005_message_edited.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     // Создаем сбощик приложения Tauri

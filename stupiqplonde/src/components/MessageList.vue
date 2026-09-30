@@ -15,6 +15,12 @@ const props = defineProps<{
   currentUserId: number;
 }>();
 
+const emit = defineEmits<{
+  edit: [message: Message];
+  copy: [message: Message];
+  forward: [message: Message];
+}>();
+
 const bottomAnchor = useTemplateRef<HTMLDivElement>("bottom-anchor");
 
 async function scrollToBottom(){
@@ -57,6 +63,9 @@ onMounted(scrollToBottom);
           :key="message.id"
           :message="message"
           :is-own="message.author_id === currentUserId"
+          @edit="emit('edit', $event)"
+          @copy="emit('copy', $event)"
+          @forward="emit('forward', $event)"
       />
       <div
         ref="bottom-anchor"

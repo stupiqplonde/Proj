@@ -1,54 +1,52 @@
 <script setup lang="ts">
 import { getFileUrl } from "../types/file.ts";
 
-import type {
-  Message,
-  MessageEdit,
-} from "../types/message.ts";
+import type { Message } from "../types/message.ts";
 
 import { ref } from "vue";
 
 const emit = defineEmits<{
-  save: [
-      message: MessageEdit
-  ];
+  edit: [message: Message];
+  copy: [message: Message];
+  forward: [message: Message];
 }>();
 
-defineProps<{
+const props = defineProps<{
   message: Message;
   isOwn: boolean;
-  close?: false;
-  edit?: false;
 }>();
 
-// function submitMess(){
-//   const cleanMess = message.body.value.trim();
-//
-//   if (!cleanMess){
-//     return;
-//   }
-//
-//   emit(
-//       "save",
-//       {
-//         message: cleanMess,
-//       },
-//   );
-// }
+const isImgOpen = ref(false);
+const isMenuOpen = ref(false);
 
-const isImgOpen = ref(false)
+const openModalImg = () => {
+  isImgOpen.value = true;
+};
+const closeModalImg = () => {
+  isImgOpen.value = false;
+};
 
-const isMessageEdit = ref(false)
+const openMenu = () => {
+  isMenuOpen.value = true;
+};
+const closeMenu = () => {
+  isMenuOpen.value = false;
+};
 
-const isEdit = ref(false)
+function onEdit() {
+  closeMenu();
+  emit("edit", props.message);
+}
 
-const openModalImg = () => { isImgOpen.value = true }
-const closeModalImg = () => { isImgOpen.value = false }
+function onCopy() {
+  closeMenu();
+  emit("copy", props.message);
+}
 
-const openModalMesEdit = () => { isMessageEdit.value = true }
-const closeModalMesEdit = () => { isMessageEdit.value = false }
-
-const openEdit = () => { isEdit.value = true }
+function onForward() {
+  closeMenu();
+  emit("forward", props.message);
+}
 </script>
 
 <template>
@@ -85,41 +83,32 @@ const openEdit = () => { isEdit.value = true }
       </div>
     </div>
 
-
-    <footer
-        @click="openModalMesEdit"
-    >
+    <footer @click="openMenu">
+      <span v-if="message.edited_at" class="edited">изменено</span>
       <span>{{ message.author_name }}</span>
       <span>|</span>
       <span>{{ message.created_at }}</span>
     </footer>
 
     <div
-        v-if="isMessageEdit"
+        v-if="isMenuOpen"
         class="modal-overlay"
-        @click.self="closeModalMesEdit"
+        @click.self="closeMenu"
     >
-    <div
-        v-if="isEdit"
-    >
-      <input
-          id="message_edit"
-          v-model="message"
-          type="text"
-          maxlength="40"
-      >
-    </div>
-
-      <div class="modal-content">
-        <button>
+      <div class="menu-content">
+        <button type="button" disabled>
           ответить
         </button>
-        <button>
+        <button type="button" @click="onCopy">
           копировать
         </button>
+        <button type="button" @click="onForward">
+          переслать
+        </button>
         <button
-            v-if="isOwn"
-            @click="openEdit"
+            v-if="isOwn && message.type === 'text'"
+            type="button"
+            @click="onEdit"
         >
           редактировать
         </button>
@@ -129,7 +118,6 @@ const openEdit = () => { isEdit.value = true }
 </template>
 
 <style scoped>
-
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -147,6 +135,36 @@ const openEdit = () => { isEdit.value = true }
   position: relative;
   max-width: 90%;
   max-height: 90%;
+}
+
+.menu-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #252830;
+}
+
+.menu-content button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  text-align: left;
+  color: #f2f3f5;
+  background: #1c1f26;
+  font: inherit;
+  cursor: pointer;
+}
+
+.menu-content button:hover:not(:disabled) {
+  background: #343842;
+}
+
+.menu-content button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .modal-image {
@@ -194,5 +212,10 @@ const openEdit = () => { isEdit.value = true }
   margin-top: 6px;
   color: #b5bbc7;
   font-size: 10px;
+  cursor: pointer;
+}
+
+.edited {
+  font-style: italic;
 }
 </style>
