@@ -73,8 +73,15 @@ const users = ref<User[]>([]);
 
 const currentUser = ref<User | null>(null);
 
-function selectUser(user: User){
+async function selectUser(user: User){
   currentUser.value = user;
+
+  if (activeChat.value){
+    await selectChat(activeChat.value);
+    return;
+  }
+
+  await loadChats();
 }
 
 // Создаем структуру одного сообщения
@@ -100,14 +107,57 @@ let db: Database | null = null;
 
 async function loadChats(){
   if (!db) return;
+  if (!currentUser.value) return;
 
   chats.value = await db.select<Chat[]>(
-    "SELECT id, title, subtitle FROM chats ORDER BY id ASC",
+    `
+      SELECT
+        chats.id,
+        chats.title,
+        chats.subtitle,
+        COUNT(messages.id) AS unread_count
+      FROM chats
+      LEFT JOIN chat_reads
+        ON chat_reads.chat_id = chats.id
+       AND chat_reads.user_id = $1
+      LEFT JOIN messages
+        ON messages.chat_id = chats.id
+       AND messages.id > COALESCE(chat_reads.last_read_message_id, 0)
+       AND messages.author_id != $2
+      GROUP BY chats.id
+      ORDER BY chats.id ASC
+    `,
+    [
+      currentUser.value.id,
+      currentUser.value.id,
+    ],
   );
+}
 
-  if (chats.value.length > 0){
-    await selectChat(chats.value[0]);
-  }
+async function markChatRead(chatId: number){
+  if (!db) return;
+  if (!currentUser.value) return;
+
+  const lastReadMessageId = messages.value.at(-1)?.id ?? 0;
+
+  await db.execute(
+    `
+      INSERT INTO chat_reads (
+        user_id,
+        chat_id,
+        last_read_message_id
+      )
+      VALUES ($1, $2, $3)
+      ON CONFLICT(user_id, chat_id)
+      DO UPDATE SET
+        last_read_message_id = excluded.last_read_message_id
+    `,
+    [
+      currentUser.value.id,
+      chatId,
+      lastReadMessageId,
+    ],
+  );
 }
 
 async function selectChat(chat: Chat){
@@ -119,6 +169,8 @@ async function selectChat(chat: Chat){
   deletingMessage.value = null;
 
   await loadMessages(chat.id);
+  await markChatRead(chat.id);
+  await loadChats();
 }
 
 // Асинхронная функция загрузки сообщений из sql
@@ -197,7 +249,9 @@ async function sendMessage(body: string){
           null,
       ],
   );
-  await loadMessages(activeChat.value.id)
+  await loadMessages(activeChat.value.id);
+  await markChatRead(activeChat.value.id);
+  await loadChats();
 }
 
 function onDelete(message: Message){
@@ -227,6 +281,8 @@ async function deleteMessage(dellmess: MessageDelete){
   deletingMessage.value = null;
 
   await loadMessages(activeChat.value.id);
+  await markChatRead(activeChat.value.id);
+  await loadChats();
 }
 
 async function sendImage(path:string){
@@ -267,9 +323,9 @@ async function sendImage(path:string){
       ]
   );
 
-  await loadMessages(
-      activeChat.value.id
-  )
+  await loadMessages(activeChat.value.id);
+  await markChatRead(activeChat.value.id);
+  await loadChats();
 }
 
 function onEdit(message: Message){
@@ -326,6 +382,10 @@ onMounted(async()=>{
     // Загружаем из базы старые сообщения
     await loadUsers();
     await loadChats();
+
+    if (chats.value.length > 0){
+      await selectChat(chats.value[0]);
+    }
 
     // Показываем успешеное состоние
     status.value = "История сохраняется локально";

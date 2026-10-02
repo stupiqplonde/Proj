@@ -34,9 +34,17 @@ function selectChat(chat: Chat){
       }"
       @click="selectChat(chat)"
     >
-      <strong class="chat-button__title">
-        {{ chat.title }}
-      </strong>
+      <div class="chat-button__row">
+        <strong class="chat-button__title">
+          {{ chat.title }}
+        </strong>
+        <span
+          v-if="chat.unread_count > 0"
+          class="unread-badge"
+        >
+          {{ chat.unread_count }}
+        </span>
+      </div>
 
       <span class="chat-button__subtitle">
         {{ chat.subtitle }}
@@ -97,12 +105,33 @@ function selectChat(chat: Chat){
 .chat-button--active{
   background: #292c34;
 }
+.chat-button__row{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .chat-button__title{
   font-size: 14px;
 }
+
 .chat-button__subtitle{
   color: #858c98;
   font-size: 12px;
+}
+
+.unread-badge{
+  flex-shrink: 0;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #3d6df2;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
 }
 
 
