@@ -5,7 +5,7 @@ import type { User } from "./types/user";
 // Импорт 2 функций из vue
 // onMounted - запускает код после появления компонента
 // ref -  создает быстрые перемещения
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import Database from "@tauri-apps/plugin-sql";
 
@@ -17,7 +17,7 @@ import MessageComposer from "./components/MessageComposer.vue";
 
 import ChatSidebar from "./components/ChatSidebar.vue";
 
-import type { Chat } from "./types/chats";
+import type { Chat, CreateChat } from "./types/chats";
 
 import type { Message, MessageDelete, MessageEdit } from "./types/message.ts";
 
@@ -25,6 +25,7 @@ import type {ProfileUpdate} from "./types/user";
 
 import ProfileEditor from "./components/ProfileEditor.vue";
 import ForwardMessageDialog from "./components/ForwardMessageDialog.vue";
+import CreateChatDialog from "./components/CreateChatDialog.vue";
 import { forwardMessage as persistForwardMessage } from "./services/forwardMessage";
 
 const isProfileOpen = ref(false);
@@ -48,19 +49,22 @@ async function saveProfile( profile: ProfileUpdate, ){
 
         SET
             display_name = $1,
-            status = $2
+            status = $2,
+            avatar_path = $3
 
-        WHERE id = $3
+        WHERE id = $4
       `,
       [
           profile.displayName,
           profile.status,
+          profile.avatarPath,
           currentUser.value.id,
       ],
   );
 
   currentUser.value.display_name = profile.displayName;
   currentUser.value.status = profile.status;
+  currentUser.value.avatar_path = profile.avatarPath;
 
   if(activeChat.value){
     await loadMessages(
@@ -75,15 +79,38 @@ const users = ref<User[]>([]);
 
 const currentUser = ref<User | null>(null);
 
+const otherUsers = computed(() =>
+  users.value.filter(user => user.id !== currentUser.value?.id),
+);
+
 async function selectUser(user: User){
   currentUser.value = user;
+  await loadChats();
 
-  if (activeChat.value){
-    await selectChat(activeChat.value);
+  const stillVisible = activeChat.value
+    ? chats.value.find(chat => chat.id === activeChat.value?.id)
+    : undefined;
+
+  if (stillVisible) {
+    await selectChat(stillVisible);
     return;
   }
 
-  await loadChats();
+  if (chats.value.length > 0) {
+    await selectChat(chats.value[0]);
+    return;
+  }
+
+  clearActiveChat();
+}
+
+function clearActiveChat(){
+  activeChat.value = null;
+  activeChatId.value = 0;
+  messages.value = [];
+  editingMessage.value = null;
+  deletingMessage.value = null;
+  forwardingMessage.value = null;
 }
 
 // Создаем структуру одного сообщения
@@ -104,6 +131,74 @@ const forwardingMessage = ref<Message | null>(null);
 const isForwarding = ref(false);
 const forwardingError = ref("");
 const forwardNotice = ref("");
+const isCreateChatOpen = ref(false);
+const isCreatingChat = ref(false);
+const createChatError = ref("");
+
+function openCreateChat(){
+  createChatError.value = "";
+  isCreateChatOpen.value = true;
+}
+
+function closeCreateChat(){
+  if (isCreatingChat.value) return;
+  isCreateChatOpen.value = false;
+  createChatError.value = "";
+}
+
+async function createChat(payload: CreateChat){
+  if (!db) return;
+  if (!currentUser.value) return;
+  if (payload.memberIds.length === 0) return;
+
+  isCreatingChat.value = true;
+  createChatError.value = "";
+
+  try {
+    const inserted = await db.execute(
+      `
+        INSERT INTO chats (title, subtitle)
+        VALUES ($1, $2)
+      `,
+      [payload.title, payload.subtitle],
+    );
+
+    let chatId = inserted.lastInsertId;
+    if (!chatId) {
+      const rows = await db.select<{ id: number }[]>(
+        "SELECT last_insert_rowid() AS id",
+      );
+      chatId = rows[0]?.id ?? 0;
+    }
+    if (!chatId) {
+      throw new Error("Не удалось получить id чата");
+    }
+    const memberIds = new Set([currentUser.value.id, ...payload.memberIds]);
+
+    for (const userId of memberIds) {
+      await db.execute(
+        `
+          INSERT INTO chat_members (chat_id, user_id)
+          VALUES ($1, $2)
+        `,
+        [chatId, userId],
+      );
+    }
+
+    await loadChats();
+    const created = chats.value.find(chat => chat.id === chatId);
+    if (created) {
+      await selectChat(created);
+    }
+    isCreateChatOpen.value = false;
+  } catch (error) {
+    console.error(error);
+    createChatError.value =
+      error instanceof Error ? error.message : "Не удалось создать чат";
+  } finally {
+    isCreatingChat.value = false;
+  }
+}
 
 // Статус подключения к бд
 const status = ref("Подключение...")
@@ -123,6 +218,9 @@ async function loadChats(){
         chats.subtitle,
         COUNT(messages.id) AS unread_count
       FROM chats
+      INNER JOIN chat_members
+        ON chat_members.chat_id = chats.id
+       AND chat_members.user_id = $1
       LEFT JOIN chat_reads
         ON chat_reads.chat_id = chats.id
        AND chat_reads.user_id = $1
@@ -472,6 +570,7 @@ onMounted(async()=>{
           :chats="chats"
           :active-chat-id="activeChatId"
           @select="selectChat"
+          @create="openCreateChat"
       />
       <section class="chat">
         <template v-if="activeChat">
@@ -499,6 +598,7 @@ onMounted(async()=>{
               @cancel-delete="cancelDelete"
           />
         </template>
+        <p v-else class="empty-chat">Нет выбранного чата. Создайте новый или выберите из списка.</p>
       </section>
     </div>
     <ProfileEditor
@@ -516,6 +616,14 @@ onMounted(async()=>{
         :error="forwardingError"
         @confirm="confirmForward"
         @close="cancelForward"
+    />
+    <CreateChatDialog
+        v-if="isCreateChatOpen && currentUser"
+        :users="otherUsers"
+        :busy="isCreatingChat"
+        :error="createChatError"
+        @create="createChat"
+        @close="closeCreateChat"
     />
   </main>
 </template>
@@ -600,6 +708,11 @@ onMounted(async()=>{
   margin: 5px 0 0;
   color: #858c98;
   font-size: 13px;
+}
+
+.empty-chat{
+  margin: 24px;
+  color: #858c98;
 }
 
 </style>

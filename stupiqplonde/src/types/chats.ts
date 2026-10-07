@@ -4,3 +4,9 @@ export interface Chat{
     subtitle: string;
     unread_count: number;
 }
+
+export interface CreateChat{
+    title: string;
+    subtitle: string;
+    memberIds: number[];
+}

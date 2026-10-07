@@ -68,6 +68,17 @@ function selectUser(user: User){
   flex-shrink: 0;
 }
 
+.profile-open-button{
+  padding: 6px 10px;
+  border: 1px solid #343842;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #20232a;
+  color: #afb5c0;
+  font: inherit;
+  font-size: 12px;
+}
+
 .header__actions{
   display: flex;
   align-items: center;

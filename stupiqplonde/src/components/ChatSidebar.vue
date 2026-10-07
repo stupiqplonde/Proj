@@ -9,6 +9,7 @@ defineProps<{
 
 const emit = defineEmits<{
   select: [chat: Chat];
+  create: [];
 }>();
 
 function selectChat(chat: Chat){
@@ -19,10 +20,18 @@ function selectChat(chat: Chat){
 <template>
 <aside class="sidebar">
   <div class="sidebar__header">
-    Чаты
+    <span>Чаты</span>
+    <button
+      type="button"
+      class="sidebar__create"
+      @click="emit('create')"
+    >
+      Новый чат
+    </button>
   </div>
 
   <div class="sidebar__list">
+    <p v-if="chats.length === 0" class="sidebar__empty">Пока нет чатов</p>
     <button
       v-for="chat in chats"
       :key="chat.id"
@@ -70,15 +79,37 @@ function selectChat(chat: Chat){
 
 .sidebar__header{
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 18px;
   border-bottom: 1px solid #252830;
   font-weight: 600;
+}
+
+.sidebar__create{
+  padding: 6px 10px;
+  border: 1px solid #343842;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #20232a;
+  color: #afb5c0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .sidebar__list{
   flex: 1;
   overflow-y: auto;
   padding: 8px;
+}
+
+.sidebar__empty{
+  margin: 12px 8px;
+  color: #858c98;
+  font-size: 13px;
 }
 
 .chat-button{
