@@ -24,6 +24,8 @@ import type { Message, MessageDelete, MessageEdit } from "./types/message.ts";
 import type {ProfileUpdate} from "./types/user";
 
 import ProfileEditor from "./components/ProfileEditor.vue";
+import ForwardMessageDialog from "./components/ForwardMessageDialog.vue";
+import { forwardMessage as persistForwardMessage } from "./services/forwardMessage";
 
 const isProfileOpen = ref(false);
 
@@ -98,6 +100,10 @@ const activeChatId = ref(1);
 const editingMessage = ref<Message | null>(null);
 
 const deletingMessage = ref<Message | null>(null);
+const forwardingMessage = ref<Message | null>(null);
+const isForwarding = ref(false);
+const forwardingError = ref("");
+const forwardNotice = ref("");
 
 // Статус подключения к бд
 const status = ref("Подключение...")
@@ -190,7 +196,9 @@ async function loadMessages(chatId: number){
        messages.body,
        messages.attachment,
        messages.created_at,
-       messages.edited_at
+       messages.edited_at,
+       messages.forwarded_author_name,
+       messages.forwarded_created_at
       FROM messages
       INNER JOIN users
             ON users.id = messages.author_id
@@ -369,8 +377,54 @@ async function onCopy(message: Message){
   await navigator.clipboard.writeText(text);
 }
 
-function onForward(_message: Message){
-  // Пересылка — следующий шаг
+function onForward(message: Message){
+  forwardingError.value = "";
+  forwardNotice.value = "";
+  forwardingMessage.value = message;
+}
+
+function cancelForward(){
+  if (isForwarding.value) return;
+  forwardingMessage.value = null;
+  forwardingError.value = "";
+}
+
+async function confirmForward(chatId: number){
+  if (isForwarding.value) return;
+  if (!db || !currentUser.value || !forwardingMessage.value) return;
+
+  const database = db;
+  const messageId = forwardingMessage.value.id;
+  const senderId = currentUser.value.id;
+  const destinationTitle = chats.value.find(chat => chat.id === chatId)?.title ?? "выбранный чат";
+  isForwarding.value = true;
+  forwardingError.value = "";
+
+  try {
+    await persistForwardMessage(database, messageId, chatId, senderId);
+  } catch (error) {
+    console.error(error);
+    forwardingError.value = "Не удалось переслать сообщение. Проверьте, что сообщение и чат ещё существуют, и повторите попытку.";
+    isForwarding.value = false;
+    return;
+  }
+
+  // Once committed, close the dialog before refreshing. A refresh failure
+  // must not offer to reinsert a message that has already been sent.
+  forwardingMessage.value = null;
+  forwardNotice.value = `Сообщение переслано в «${destinationTitle}».`;
+  try {
+    if (currentUser.value?.id === senderId && activeChat.value?.id === chatId) {
+      await loadMessages(chatId);
+      await markChatRead(chatId);
+    }
+    await loadChats();
+  } catch (error) {
+    console.error(error);
+    forwardNotice.value += " Не удалось обновить список. Откройте чат заново.";
+  } finally {
+    isForwarding.value = false;
+  }
 }
 
 // VUE выполнит код ниже, когда интерфейс программы уже загрузится
@@ -409,6 +463,7 @@ onMounted(async()=>{
         @profile="openProfile"
     />
     <p v-else class="boot-status">{{ status }}</p>
+    <p v-if="forwardNotice" class="forward-notice" role="status">{{ forwardNotice }}</p>
     <div
         v-if="currentUser"
         class="workspace"
@@ -453,6 +508,15 @@ onMounted(async()=>{
         @save="saveProfile"
         @close="closeProfile"
     ></ProfileEditor>
+    <ForwardMessageDialog
+        v-if="forwardingMessage"
+        :message="forwardingMessage"
+        :chats="chats"
+        :busy="isForwarding"
+        :error="forwardingError"
+        @confirm="confirmForward"
+        @close="cancelForward"
+    />
   </main>
 </template>
 
@@ -504,6 +568,14 @@ onMounted(async()=>{
 .boot-status{
   margin: 24px;
   color: #858c98;
+}
+
+.forward-notice {
+  margin: 0;
+  padding: 10px 24px;
+  color: #bbd4ff;
+  background: #1b2944;
+  font-size: 13px;
 }
 
 .chat{

@@ -63,6 +63,9 @@ function onDelete(){
         'message--other': !isOwn,
       }"
   >
+    <p v-if="message.forwarded_author_name !== null" class="forwarded-label">
+      Переслано от {{ message.forwarded_author_name }}
+    </p>
     <p v-if="message.type === 'text'">
       {{ message.body }}
     </p>
@@ -76,7 +79,7 @@ function onDelete(){
     />
 
     <div
-        v-if="isImgOpen"
+        v-if="isImgOpen && message.attachment"
         class="modal-overlay"
         @click.self="closeModalImg"
     >
@@ -131,6 +134,13 @@ function onDelete(){
 </template>
 
 <style scoped>
+.forwarded-label {
+  border-left: 2px solid #88b5ff;
+  padding-left: 8px;
+  color: #bbd4ff;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -226,6 +236,10 @@ function onDelete(){
   color: #b5bbc7;
   font-size: 10px;
   cursor: pointer;
+}
+
+.message p.forwarded-label {
+  margin-bottom: 8px;
 }
 
 .edited {

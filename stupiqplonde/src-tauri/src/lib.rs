@@ -194,6 +194,12 @@ pub fn run() {
             sql: include_str!("../migrations/0006_chat_reads.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 7,
+            description: "message_forwarding",
+            sql: include_str!("../migrations/0007_message_forwarding.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     // Создаем сбощик приложения Tauri

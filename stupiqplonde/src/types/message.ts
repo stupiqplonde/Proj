@@ -11,6 +11,8 @@ export interface Message{
     attachment: string | null;
     created_at: string;
     edited_at: string | null;
+    forwarded_author_name: string | null;
+    forwarded_created_at: string | null;
 }
 
 export interface MessageEdit{
