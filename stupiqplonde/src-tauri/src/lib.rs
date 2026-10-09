@@ -1,6 +1,7 @@
 
 // Импорт типов, необходимых для migrations
 use tauri_plugin_sql::{Migration, MigrationKind};
+mod channels;
 
 use std::path::Path;
 
@@ -206,6 +207,18 @@ pub fn run() {
             sql: include_str!("../migrations/0008_chat_members.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 9,
+            description: "channels_reactions_comments",
+            sql: include_str!("../migrations/0009_channels.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 10,
+            description: "channel_permissions",
+            sql: include_str!("../migrations/0010_channel_permissions.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     // Создаем сбощик приложения Tauri
@@ -225,7 +238,8 @@ pub fn run() {
         // Запускаем приложение
         .invoke_handler(
             tauri::generate_handler![
-                save_attachment
+                save_attachment,
+                channels::create_channel
             ]
         )
         .run(tauri::generate_context!())

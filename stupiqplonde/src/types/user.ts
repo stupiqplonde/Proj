@@ -12,3 +12,17 @@ export interface ProfileUpdate{
     status: string;
     avatarPath: string | null;
 }
+
+export interface Login {
+    login: string;
+    password: string;
+}
+
+export interface Registration extends Login {
+    displayName: string;
+}
+
+export interface PasswordUpdate {
+    currentPassword: string;
+    newPassword: string;
+}

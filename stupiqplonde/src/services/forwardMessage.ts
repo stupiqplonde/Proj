@@ -15,7 +15,12 @@ export const FORWARD_MESSAGE_SQL = `
   INNER JOIN users AS author ON author.id = source.author_id
   INNER JOIN chats AS destination ON destination.id = $1
   INNER JOIN users AS sender ON sender.id = $2
+  INNER JOIN chat_members AS destination_member
+    ON destination_member.chat_id = destination.id AND destination_member.user_id = $2
+  INNER JOIN chat_members AS source_member
+    ON source_member.chat_id = source.chat_id AND source_member.user_id = $2
   WHERE source.id = $3
+    AND (destination.kind = 'chat' OR (destination.owner_id = $2 AND destination_member.role = 'owner'))
 `;
 
 export async function forwardMessage(

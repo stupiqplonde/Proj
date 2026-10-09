@@ -1,0 +1,37 @@
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: light;
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --background: #f5f5f7;
+  --surface: #ffffff;
+  --sidebar: #f6f7fa;
+  --border: #e7e9ee;
+  --accent: #007aff;
+  --accent-soft: #eaf3ff;
+  --danger: #d94b4b;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input::placeholder, textarea::placeholder { color: #a0a5b0; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #007aff85; outline-offset: 3px; }
+input, textarea { accent-color: var(--accent); }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: #d6dbe4; border-radius: 5px; }
+.icon-button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); }
+.icon-button:hover { background: var(--background); color: var(--text); }
+.primary-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 17px; border: 0; border-radius: 9px; background: var(--accent); color: white; font-size: 12px; font-weight: 550; }
+.form-error { font-size: 12px; color: var(--danger); line-height: 1.5; }
+
+.create-dialog, .join-dialog, .forward-dialog, .profile-card { box-shadow: 0 20px 80px #17234526; border-radius: 20px !important; }
+.create-dialog button[type="submit"], .join-dialog button[type="submit"], .forward-actions button:last-child, .profile-button--primary { color: white !important; }
+.create-dialog input, .join-dialog input, .profile-field input, .profile-field textarea { background: white !important; }
+.create-hint, .join-hint { font-size: 12px !important; }

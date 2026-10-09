@@ -100,7 +100,7 @@ onBeforeUnmount(() => previousFocus?.focus());
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: #000a;
+  background: rgba(29, 35, 48, .38);
   display: grid;
   place-items: center;
   padding: 20px;
@@ -110,15 +110,15 @@ onBeforeUnmount(() => previousFocus?.focus());
   max-height: calc(100dvh - 40px);
   overflow-y: auto;
   padding: 24px;
-  border: 1px solid #363c48;
+  border: 1px solid var(--border);
   border-radius: 16px;
-  background: #191c23;
-  color: #f2f3f5;
+  background: var(--surface);
+  color: var(--text);
 }
 h2 { margin: 0 0 16px; font-size: 20px; }
 .forward-preview { display: grid; gap: 6px; overflow-wrap: anywhere; }
 .forward-preview span {
-  color: #b8bfcb;
+  color: var(--text);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -134,20 +134,20 @@ legend { margin-bottom: 10px; }
   border-radius: 8px;
   cursor: pointer;
 }
-.forward-chat:hover { background: #292e39; }
+.forward-chat:hover { background: var(--background); }
 .forward-chat span { overflow-wrap: anywhere; min-width: 0; }
 .forward-actions { display: flex; justify-content: flex-end; gap: 12px; }
 button {
   padding: 10px 16px;
-  border: 1px solid #4b5363;
+  border: 1px solid var(--border);
   border-radius: 8px;
   color: inherit;
-  background: #292e39;
+  background: var(--background);
   font: inherit;
   cursor: pointer;
 }
-button:last-child { background: #315bd5; }
+button:last-child { background: var(--accent); }
 button:disabled { opacity: .5; cursor: not-allowed; }
 button:focus-visible, input:focus-visible { outline: 2px solid #8bb8ff; outline-offset: 3px; }
-.forward-error { color: #ffb1b1; }
+.forward-error { color: var(--danger); }
 </style>

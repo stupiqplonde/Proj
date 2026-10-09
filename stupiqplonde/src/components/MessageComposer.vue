@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { onBeforeUnmount, ref, watch } from "vue";
 
 import { open } from "@tauri-apps/plugin-dialog";
 
 import { invoke } from "@tauri-apps/api/core";
 
 import type { Message, MessageDelete, MessageEdit } from "../types/message.ts";
+import AppIcon from "./AppIcon.vue";
 
 const props = defineProps<{
   editingMessage?: Message | null;
   deletingMessage?: Message | null;
+  disabled: boolean;
+  isChannel: boolean;
+  error: string;
+  submittedMessage: number;
 }>();
 
 const emit = defineEmits<{
@@ -22,6 +27,9 @@ const emit = defineEmits<{
 }>();
 
 const draft = ref("");
+const imageError = ref("");
+let mounted = true;
+onBeforeUnmount(() => { mounted = false; });
 
 watch(
   () => props.editingMessage,
@@ -34,7 +42,13 @@ watch(
   },
 );
 
+watch(
+  () => props.submittedMessage,
+  () => { draft.value = ""; },
+);
+
 function submitMessage() {
+  if (props.disabled) return;
   const body = draft.value.trim();
 
   if (!body) return;
@@ -44,24 +58,25 @@ function submitMessage() {
       id: props.editingMessage.id,
       body,
     });
-    draft.value = "";
     return;
   }
 
   emit("send", body);
-  draft.value = "";
 }
 
 function cancelEdit() {
+  if (props.disabled) return;
   draft.value = "";
   emit("cancelEdit");
 }
 
 function cancelDelete() {
+  if (props.disabled) return;
   emit("cancelDelete");
 }
 
 function confirmDelete() {
+  if (props.disabled) return;
   if (!props.deletingMessage) return;
 
   emit("deleteMessage", {
@@ -70,28 +85,34 @@ function confirmDelete() {
 }
 
 async function selectImage() {
-  if (props.editingMessage) return;
+  if (props.editingMessage || props.disabled) return;
+  imageError.value = "";
 
-  const file = await open({
-    multiple: false,
+  try {
+    const file = await open({
+      multiple: false,
 
-    filters: [
-      {
-        name: "Image",
-        extensions: ["png", "jpg", "jpeg", "webp", "gif"],
-      },
-    ],
-  });
+      filters: [
+        {
+          name: "Image",
+          extensions: ["png", "jpg", "jpeg", "webp", "gif"],
+        },
+      ],
+    });
 
-  if (!file) {
-    return;
+    if (!file || !mounted || props.disabled) {
+      return;
+    }
+
+    const savedPath = await invoke<string>("save_attachment", {
+      source: file,
+    });
+
+    if (mounted && !props.disabled) emit("sendImage", savedPath);
+  } catch (error) {
+    console.error(error);
+    if (mounted) imageError.value = "Не удалось прикрепить изображение. Повторите попытку.";
   }
-
-  const savedPath = await invoke<string>("save_attachment", {
-    source: file,
-  });
-
-  emit("sendImage", savedPath);
 }
 </script>
 
@@ -108,6 +129,7 @@ async function selectImage() {
       <button
           type="button"
           class="cancel-button"
+          :disabled="disabled"
           @click="cancelEdit"
       >
         ✕
@@ -121,20 +143,25 @@ async function selectImage() {
           v-if="!editingMessage"
           type="button"
           class="image-button"
+          aria-label="Прикрепить изображение"
+          :disabled="disabled"
           @click="selectImage"
       >
-        📎
+        <AppIcon name="paperclip" :size="20" />
       </button>
       <input
           v-model="draft"
           type="text"
-          :placeholder="editingMessage ? 'Измените сообщение' : 'Ну пиши уже че нить'"
+          :disabled="disabled"
+          :placeholder="editingMessage ? 'Измените сообщение' : isChannel ? 'Написать публикацию…' : 'Написать сообщение…'"
           autocomplete="off"
       />
-      <button type="submit">
-        {{ editingMessage ? "Сохранить" : "Отправить" }}
+      <button type="submit" :disabled="disabled || !draft.trim()" :aria-label="editingMessage ? 'Сохранить' : isChannel ? 'Опубликовать' : 'Отправить'">
+        <AppIcon :name="editingMessage ? 'check' : 'send'" :size="18" />
       </button>
     </form>
+
+    <p v-if="error || imageError" class="composer-error" role="alert">{{ error || imageError }}</p>
 
     <div
         v-if="deletingMessage"
@@ -148,6 +175,7 @@ async function selectImage() {
           <button
               type="button"
               class="confirm-cancel"
+              :disabled="disabled"
               @click="cancelDelete"
           >
             Отмена
@@ -155,6 +183,7 @@ async function selectImage() {
           <button
               type="button"
               class="confirm-delete"
+              :disabled="disabled"
               @click="confirmDelete"
           >
             Удалить
@@ -168,8 +197,15 @@ async function selectImage() {
 <style scoped>
 .composer-wrap {
   flex-shrink: 0;
-  border-top: 1px solid #252830;
-  background: #17191f;
+  padding: 0 20px 18px;
+  background: var(--surface);
+}
+
+.composer-error {
+  margin: 0;
+  padding: 0 20px 15px;
+  color: var(--danger);
+  font-size: 13px;
 }
 
 .edit-bar {
@@ -185,20 +221,20 @@ async function selectImage() {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  border-left: 3px solid #4f7fea;
+  border-left: 3px solid var(--accent);
   padding-left: 10px;
 }
 
 .edit-bar-text strong {
   font-size: 12px;
-  color: #4f7fea;
+  color: var(--accent);
 }
 
 .edit-bar-text span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #858c98;
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -208,7 +244,7 @@ async function selectImage() {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(29, 35, 48, .38);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -223,12 +259,13 @@ async function selectImage() {
   max-width: 90vw;
   padding: 18px;
   border-radius: 12px;
-  background: #252830;
+  background: var(--surface);
+  box-shadow: 0 20px 80px #17234526;
 }
 
 .confirm-dialog strong {
   font-size: 15px;
-  color: #f2f3f5;
+  color: var(--text);
 }
 
 .confirm-dialog p {
@@ -236,7 +273,7 @@ async function selectImage() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #858c98;
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -256,21 +293,21 @@ async function selectImage() {
 }
 
 .confirm-cancel {
-  color: #f2f3f5;
-  background: #1c1f26;
+  color: var(--text);
+  background: var(--background);
 }
 
 .confirm-cancel:hover {
-  background: #343842;
+  background: var(--border);
 }
 
 .confirm-delete {
   color: white;
-  background: #3c0a0a;
+  background: var(--danger);
 }
 
 .confirm-delete:hover {
-  background: #3c0a0a;
+  background: var(--danger);
 }
 
 .cancel-button {
@@ -278,59 +315,74 @@ async function selectImage() {
   height: 32px;
   border: none;
   border-radius: 8px;
-  color: #b5bbc7;
+  color: var(--muted);
   background: transparent;
   cursor: pointer;
   font-size: 16px;
 }
 
 .cancel-button:hover {
-  background: #252830;
+  background: var(--border);
 }
 
 .image-button {
   width: 42px;
   height: 42px;
-  border: 1px solid #343842;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 0;
   border-radius: 8px;
-  background: #20232a;
+  background: var(--background);
+  color: var(--muted);
   cursor: pointer;
   font-size: 18px;
 }
 
 .image-button:hover {
-  background: #292c34;
+  background: var(--border);
 }
 
 .composer {
   display: flex;
-  gap: 10px;
-  padding: 15px 20px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
 }
+.composer:focus-within { border-color: #c2d9f7; box-shadow: 0 0 0 3px #007aff08; }
 
 .composer input {
   flex: 1;
   min-width: 0;
   padding: 11px 13px;
-  border: 1px solid #343842;
+  border: 0;
   border-radius: 7px;
   outline: none;
-  color: #f2f3f5;
-  background: #20232a;
+  color: var(--text);
+  background: var(--background);
   font: inherit;
+  font-size: 12px;
 }
 
 .composer input:focus {
-  border-color: #4f7fea;
+  border-color: var(--accent);
 }
 
 .composer button[type="submit"] {
-  padding: 0 18px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  flex-shrink: 0;
   border: none;
   border-radius: 7px;
   cursor: pointer;
   color: white;
-  background: #386be0;
+  background: var(--accent);
   font: inherit;
   font-weight: 600;
 }

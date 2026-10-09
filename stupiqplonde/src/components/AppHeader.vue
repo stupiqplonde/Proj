@@ -1,107 +1,18 @@
 <script setup lang="ts">
-
-import UserSwitcher from "./UserSwitcher.vue";
-
-import type { User } from "../types/user";
-
-// defineProps - спец конструкция vue, которая сообщает:
-// Этот компонент ожидает получения данных от родительского компонента
-
-defineProps<{
-  status: string;
-  users: User[];
-  currentUser: User;
-}>();
-
-const emit = defineEmits<{
-  select: [user: User];
-  profile: [];
-}>();
-
-function selectUser(user: User){
-  emit("select", user);
-}
+import AppIcon from "./AppIcon.vue";
+defineProps<{ status: string }>();
 </script>
 
 <template>
   <header class="header">
-    <div>
-      <h1>Encore 67 messenger</h1>
-
-      <p>{{status}}</p>
-    </div>
-
-    <div class="header__actions">
-      <UserSwitcher
-          :users="users"
-          :current-user-id="currentUser.id"
-          @select="selectUser"
-      />
-      <button
-          type="button"
-          class="profile-open-button"
-          @click="emit('profile')"
-      >
-        Профиль
-      </button>
-    </div>
-    <span class="badge">
-        Локально
-      </span>
+    <div class="header-title"><AppIcon name="chat" :size="17" /><span>Ваше пространство</span></div>
+    <div class="header-status" :title="status"><span class="status-dot"></span>На этом устройстве</div>
   </header>
 </template>
 
 <style scoped>
-/*
-  CSS этого блока будет относиться только к текущему vue компоненту
-  Например .header не повлияет на любой другой .header в коде вне этого компонента
-*/
-
-.header{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 24px;
-  border-bottom: 1px solid #292c34;
-  background: #17191f;
-  /* Управляет тем, может ли flex уменьшать элемент*/
-  flex-shrink: 0;
-}
-
-.profile-open-button{
-  padding: 6px 10px;
-  border: 1px solid #343842;
-  border-radius: 6px;
-  cursor: pointer;
-  background: #20232a;
-  color: #afb5c0;
-  font: inherit;
-  font-size: 12px;
-}
-
-.header__actions{
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.header h1 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.header p{
-  margin: 4px 0 0;
-  color: #8f96a3;
-}
-
-.badge{
-  padding: 6px 10px;
-  border: 1px solid #343842;
-  border-radius: 6px;
-  color: #afb5c0;
-  background: #20232a;
-  font-size: 12px;
-}
-
+.header { height: 54px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 24px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.header-title { display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 550; }.header-title svg { color: var(--muted); }
+.header-status { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; white-space: nowrap; }.status-dot { width: 5px; height: 5px; background: #34c759; border-radius: 50%; }
+@media (max-width: 720px) { .header-status { display: none; } }
 </style>

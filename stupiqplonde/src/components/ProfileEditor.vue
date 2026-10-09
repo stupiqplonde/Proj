@@ -7,6 +7,8 @@ import type { ProfileUpdate, User } from "../types/user";
 
 const props = defineProps<{
   user: User;
+  busy: boolean;
+  error: string;
 }>();
 
 const emit = defineEmits<{
@@ -29,23 +31,22 @@ const initials = computed(() => {
 });
 
 async function pickAvatar() {
+  if (props.busy) return;
   avatarError.value = "";
 
-  const file = await open({
-    multiple: false,
-    filters: [
-      {
-        name: "Image",
-        extensions: ["png", "jpg", "jpeg", "webp", "gif"],
-      },
-    ],
-  });
-
-  if (!file) {
-    return;
-  }
-
   try {
+    const file = await open({
+      multiple: false,
+      filters: [
+        {
+          name: "Image",
+          extensions: ["png", "jpg", "jpeg", "webp", "gif"],
+        },
+      ],
+    });
+
+    if (!file) return;
+
     avatarPath.value = await invoke<string>("save_attachment", {
       source: file,
     });
@@ -56,11 +57,13 @@ async function pickAvatar() {
 }
 
 function clearAvatar() {
+  if (props.busy) return;
   avatarPath.value = null;
   avatarError.value = "";
 }
 
 function submitProfile() {
+  if (props.busy) return;
   const cleanDisplayName = displayName.value.trim();
 
   if (!cleanDisplayName) {
@@ -73,10 +76,14 @@ function submitProfile() {
     avatarPath: avatarPath.value,
   });
 }
+
+function close(){
+  if (!props.busy) emit("close");
+}
 </script>
 
 <template>
-  <div class="profile-backdrop" @click.self="emit('close')">
+  <div class="profile-backdrop" @click.self="close" @keydown.esc="close">
     <section
       class="profile-card"
       role="dialog"
@@ -89,12 +96,14 @@ function submitProfile() {
           type="button"
           class="profile-card__close"
           aria-label="Закрыть"
-          @click="emit('close')"
+          :disabled="busy"
+          @click="close"
         >
           ×
         </button>
       </header>
       <form class="profile-form" @submit.prevent="submitProfile">
+        <fieldset class="profile-controls" :disabled="busy">
         <div class="profile-avatar">
           <img
             v-if="avatarSrc"
@@ -144,21 +153,23 @@ function submitProfile() {
           ></textarea>
         </label>
         <div class="profile-username">
-          <span>username</span>
+          <span>Имя пользователя</span>
           <strong>@{{ user.username }}</strong>
         </div>
+        <p v-if="error" class="profile-error" role="alert">{{ error }}</p>
         <footer class="profile-actions">
           <button
             type="button"
             class="profile-button profile-button--secondary"
-            @click="emit('close')"
+              @click="close"
           >
             Отмена
           </button>
           <button type="submit" class="profile-button profile-button--primary">
-            Сохранить
+            {{ busy ? 'Сохраняю…' : 'Сохранить' }}
           </button>
         </footer>
+        </fieldset>
       </form>
     </section>
   </div>
@@ -172,7 +183,7 @@ function submitProfile() {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: #000a;
+  background: rgba(29, 35, 48, .38);
 }
 
 .profile-card {
@@ -180,10 +191,10 @@ function submitProfile() {
   max-height: calc(100dvh - 40px);
   overflow-y: auto;
   padding: 24px;
-  border: 1px solid #363c48;
+  border: 1px solid var(--border);
   border-radius: 16px;
-  background: #191c23;
-  color: #f2f3f5;
+  background: var(--surface);
+  color: var(--text);
 }
 
 .profile-card__header {
@@ -201,9 +212,9 @@ function submitProfile() {
 .profile-card__close {
   width: 32px;
   height: 32px;
-  border: 1px solid #4b5363;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #292e39;
+  background: var(--background);
   color: inherit;
   font: inherit;
   font-size: 18px;
@@ -215,6 +226,8 @@ function submitProfile() {
   display: grid;
   gap: 16px;
 }
+
+.profile-controls { display: grid; gap: 16px; border: 0; padding: 0; margin: 0; min-width: 0; }
 
 .profile-avatar {
   display: flex;
@@ -232,13 +245,13 @@ function submitProfile() {
 
 .profile-avatar__image {
   object-fit: cover;
-  border: 1px solid #363c48;
+  border: 1px solid var(--border);
 }
 
 .profile-avatar__fallback {
   display: grid;
   place-items: center;
-  background: #315bd5;
+  background: var(--accent);
   font-size: 28px;
   font-weight: 600;
 }
@@ -252,16 +265,16 @@ function submitProfile() {
 .profile-field {
   display: grid;
   gap: 8px;
-  color: #b8bfcb;
+  color: var(--text);
   font-size: 13px;
 }
 
 .profile-field input,
 .profile-field textarea {
   padding: 10px 12px;
-  border: 1px solid #363c48;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #111318;
+  background: var(--background);
   color: inherit;
   font: inherit;
   resize: vertical;
@@ -278,12 +291,12 @@ function submitProfile() {
 .profile-username {
   display: grid;
   gap: 4px;
-  color: #8f96a3;
+  color: var(--muted);
   font-size: 13px;
 }
 
 .profile-username strong {
-  color: #f2f3f5;
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -295,17 +308,17 @@ function submitProfile() {
 
 .profile-button {
   padding: 10px 16px;
-  border: 1px solid #4b5363;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #292e39;
+  background: var(--background);
   color: inherit;
   font: inherit;
   cursor: pointer;
 }
 
 .profile-button--primary {
-  background: #315bd5;
-  border-color: #315bd5;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .profile-button--ghost {
@@ -314,7 +327,7 @@ function submitProfile() {
 
 .profile-error {
   margin: 0;
-  color: #ffb1b1;
+  color: var(--danger);
   font-size: 13px;
 }
 </style>

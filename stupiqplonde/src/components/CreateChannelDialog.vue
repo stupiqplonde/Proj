@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue";
-import type { CreateChat } from "../types/chats";
+import type { CreateChannel } from "../types/chats";
 import type { User } from "../types/user";
 
 const props = defineProps<{
@@ -9,18 +9,18 @@ const props = defineProps<{
   error: string;
 }>();
 const emit = defineEmits<{
-  create: [chat: CreateChat];
+  create: [channel: CreateChannel];
   close: [];
 }>();
 
 const title = ref("");
 const subtitle = ref("");
 const selectedIds = ref<number[]>([]);
-const dialog = useTemplateRef<HTMLDivElement>("dialog");
+const dialog = useTemplateRef<HTMLFormElement>("dialog");
 let previousFocus: HTMLElement | null = null;
 
 const canSubmit = computed(
-  () => title.value.trim().length > 0 && selectedIds.value.length > 0 && !props.busy,
+  () => title.value.trim().length > 0 && !props.busy,
 );
 
 function close() {
@@ -29,7 +29,7 @@ function close() {
 
 function submit() {
   const cleanTitle = title.value.trim();
-  if (!cleanTitle || selectedIds.value.length === 0 || props.busy) return;
+  if (!cleanTitle || props.busy) return;
   emit("create", {
     title: cleanTitle,
     subtitle: subtitle.value.trim(),
@@ -79,34 +79,38 @@ onBeforeUnmount(() => previousFocus?.focus());
       class="create-dialog"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="create-chat-title"
+      aria-labelledby="create-channel-title"
       :aria-busy="busy"
       tabindex="-1"
       @keydown="onKeydown"
       @submit.prevent="submit"
     >
-      <h2 id="create-chat-title">Новый чат</h2>
+      <h2 id="create-channel-title">Новый канал</h2>
+      <p class="create-hint">
+        Вы будете автором: только вы публикуете посты. Остальные смотрят, реагируют и комментируют.
+        После создания появится код приглашения — им можно пригласить людей.
+      </p>
       <label class="create-field">
         Название
         <input v-model="title" type="text" name="title" maxlength="80" :disabled="busy" required />
       </label>
       <label class="create-field">
-        Подзаголовок
+        Описание
         <input v-model="subtitle" type="text" name="subtitle" maxlength="120" :disabled="busy" />
       </label>
       <fieldset :disabled="busy" class="create-members">
-        <legend>Участники</legend>
+        <legend>Участники сразу (необязательно)</legend>
         <label v-for="user in users" :key="user.id" class="create-member">
           <input v-model="selectedIds" type="checkbox" :value="user.id" />
           <span>{{ user.display_name }}</span>
         </label>
-        <p v-if="users.length === 0">Нет других пользователей.</p>
+        <p v-if="users.length === 0" class="create-empty">Нет других пользователей — пригласите позже по коду.</p>
       </fieldset>
       <p v-if="error" role="alert" class="create-error">{{ error }}</p>
       <div class="create-actions">
         <button type="button" :disabled="busy" @click="close">Отмена</button>
         <button type="submit" :disabled="!canSubmit">
-          {{ busy ? "Создаю…" : "Создать" }}
+          {{ busy ? "Создаю…" : "Создать канал" }}
         </button>
       </div>
     </form>
@@ -133,7 +137,13 @@ onBeforeUnmount(() => previousFocus?.focus());
   background: var(--surface);
   color: var(--text);
 }
-h2 { margin: 0 0 16px; font-size: 20px; }
+h2 { margin: 0 0 10px; font-size: 20px; }
+.create-hint {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
 .create-field {
   display: grid;
   gap: 6px;
@@ -161,6 +171,7 @@ legend { margin-bottom: 10px; }
 }
 .create-member:hover { background: var(--background); }
 .create-member span { overflow-wrap: anywhere; min-width: 0; }
+.create-empty { margin: 0; color: var(--muted); font-size: 13px; }
 .create-actions { display: flex; justify-content: flex-end; gap: 12px; }
 button {
   padding: 10px 16px;

@@ -63,6 +63,14 @@ function onDelete(){
         'message--other': !isOwn,
       }"
   >
+    <header class="message-header">
+      <span class="message-avatar"><img v-if="message.author_avatar" :src="getFileUrl(message.author_avatar)" alt="" /><span v-else>{{ message.author_name.slice(0, 1).toUpperCase() }}</span></span>
+      <strong>{{ message.author_name }}</strong>
+      <time>{{ message.created_at }}</time>
+      <span v-if="message.edited_at" class="edited">изменено</span>
+      <button type="button" class="message-menu" aria-label="Действия с сообщением" @click="openMenu">···</button>
+    </header>
+    <div class="message-body">
     <p v-if="message.forwarded_author_name !== null" class="forwarded-label">
       Переслано от {{ message.forwarded_author_name }}
     </p>
@@ -92,12 +100,7 @@ function onDelete(){
       </div>
     </div>
 
-    <footer @click="openMenu">
-      <span v-if="message.edited_at" class="edited">изменено</span>
-      <span>{{ message.author_name }}</span>
-      <span>|</span>
-      <span>{{ message.created_at }}</span>
-    </footer>
+    </div>
 
     <div
         v-if="isMenuOpen"
@@ -137,7 +140,7 @@ function onDelete(){
 .forwarded-label {
   border-left: 2px solid #88b5ff;
   padding-left: 8px;
-  color: #bbd4ff;
+  color: var(--accent);
   font-size: 12px;
   overflow-wrap: anywhere;
 }
@@ -147,7 +150,7 @@ function onDelete(){
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(29, 35, 48, .38);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -167,7 +170,9 @@ function onDelete(){
   min-width: 200px;
   padding: 12px;
   border-radius: 12px;
-  background: #252830;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 15px 60px #17234526;
 }
 
 .menu-content button {
@@ -175,14 +180,14 @@ function onDelete(){
   border: none;
   border-radius: 8px;
   text-align: left;
-  color: #f2f3f5;
-  background: #1c1f26;
+  color: var(--text);
+  background: var(--surface);
   font: inherit;
   cursor: pointer;
 }
 
 .menu-content button:hover:not(:disabled) {
-  background: #343842;
+  background: var(--border);
 }
 
 .menu-content button:disabled {
@@ -208,34 +213,34 @@ function onDelete(){
 }
 
 .message {
-  max-width: 70%;
+  width: 100%;
+  max-width: 100%;
   margin: 0;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
 }
 .message--own {
-  align-self: flex-end;
-  background: #386be0;
+  align-self: flex-start;
+  background: #f8fbff;
 }
 .message--other {
   align-self: flex-start;
-  background: #252830;
+  background: transparent;
 }
+.message:hover { background: #f6f8fb; }
+.message-header { display: flex; align-items: center; gap: 9px; margin-bottom: 3px; }
+.message-avatar { width: 30px; height: 30px; border-radius: 10px; flex-shrink: 0; display: grid; place-items: center; overflow: hidden; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; }
+.message-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.message-header strong { font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.message-header time, .edited { font-size: 9px; color: var(--muted); }
+.message-menu { margin-left: auto; background: transparent; border: 0; padding: 0 6px; border-radius: 5px; font-size: 21px; color: var(--muted); line-height: 20px; }
+.message-menu:hover { background: var(--border); }
+.message-body { padding-left: 39px; font-size: 13px; }
 
 .message p {
   margin: 0;
   line-height: 1.45;
   overflow-wrap: anywhere;
-}
-
-.message footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 5px;
-  margin-top: 6px;
-  color: #b5bbc7;
-  font-size: 10px;
-  cursor: pointer;
 }
 
 .message p.forwarded-label {

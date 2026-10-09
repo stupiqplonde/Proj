@@ -1,0 +1,2 @@
+# SQLx checksums depend on exact bytes, including line endings.
+src-tauri/migrations/*.sql -text

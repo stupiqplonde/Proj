@@ -48,24 +48,24 @@ function selectUser(user: User){
 }
 
 .user-switcher__label{
-  color: #8f96a3;
+  color: var(--muted);
   font-size: 12px;
 }
 
 .user-switcher__button{
   padding: 6px 10px;
-  border: 1px solid #343842;
+  border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
-  background: #20232a;
-  color: #afb5c0;
+  background: var(--background);
+  color: var(--muted);
   font: inherit;
   font-size: 12px;
 }
 
 .user-switcher__button--active{
-  background: #386be0;
-  border-color: #386be0;
+  background: var(--accent);
+  border-color: var(--accent);
   color: white;
 }
 </style>
